@@ -1,0 +1,274 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+        XHTMLBoy's website - Type-dependent instances in Java
+    </title>
+    <meta name="description" content="While studying Java (to become a real Java-Champion) I came across a feature I didn&apos;t know about, &quot;type-dependent instances&quot;. Incredible!">
+    <link href="/css/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/hl.css">
+    <link href="/css/style.css" rel="stylesheet">
+    <script src="/js/hl.js"></script>
+    <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSSBoy">
+  </head>
+  <body>
+    <header>
+      <h1>XHTMLBoy's Website</h1>
+      <blockquote>
+        You are on a website dedicated to the enthusiasts of
+        (valid) <strong>XHTML</strong>, and of <strong>beautiful
+        mechanics</strong>.
+      </blockquote>
+    </header>
+    <main><a href="/index.html">Back to index</a>
+
+<article>
+    <h2>Type-dependent instances in Java</h2>
+    <ul class="tags-list"><li><a href="/tags.html#tag-java">java</a></li><li><a href="/tags.html#tag-types">types</a></li><li><a href="/tags.html#tag-indexation">indexation</a></li></ul><blockquote>
+<p>Today, I present you with a powerful tip... so strong that I almost didn't
+share it. But when you want to become a champion, in a community other than
+boxing, you have to be able to take on the role of mentor and share the
+knowledge you have acquired over the years without limit. Watch your abs,
+we're going <em>to build muscle</em>, and not just the head, let me introduce &quot;<em>type
+dependent instances</em>&quot;.</p>
+</blockquote>
+<p>When you want to become a 10-engineer you have to master several skills.
+Firstly, you need to use a &quot;<em>business ready</em>&quot; language (like
+<a href="https://docs.microsoft.com/en-us/dotnet/csharp/tour-of-csharp/">C#</a> or
+<a href="https://www.java.com/fr/">Java</a>, usually these kinds of serious languages have
+an &quot;<em>Enterprise</em>&quot; version), then, you have to be able to write software that
+crashes enough to ensure cash-money by doing maintenance, and finally, you have
+to be able to abstract enough not to repeat yourself... and yes, it is often
+said, software engineers are lazy! In this article, I propose you to discover an
+article which will make you save a colossal amount of time! Please note that all
+the examples presented here are from a case that actually happened. <em>I swear on
+my mother's life</em> (lol).</p>
+<h3>A brief background of the problem</h3>
+<p>This part could have been called &quot;<strong>How I solved, with great intelligence, a very
+complex problem</strong>&quot;.</p>
+<blockquote>
+<p>Beware, this first part is full of very complicated code, so don't panic if
+you don't understand everything at first reading.</p>
+</blockquote>
+<p>While awkwardly trying to write software, I kept sadly running into
+<code>NullPointerException</code>. What a hell! Although Java could be a bit more expansive
+on the ability of a value to become <code>null</code> (as in
+<a href="https://kotlinlang.org/">Kotlin</a> which is, <strong>to my knowledge</strong>, one of the only
+languages that handles explicit treatment of nullable values), the error is
+essentially my responsibility! As I am an engineer, I just need to write a
+function that can handle <strong>the presence or absence of an integer</strong>! Nice.</p>
+<p>First, the parent type is described:</p>
+<pre><code class="language-java">abstract class NullableInt {}
+</code></pre>
+<p>And then I can describe the two cases, the first being whether I have a value.
+It's quite simple, you just assign a value.</p>
+<pre><code class="language-java">class Int extends NullableInt {
+    private int value;
+    public Int(int value) {
+        this.value = value;
+    }
+
+    public String toString() {
+        return &quot;&quot; + this.value;
+    }
+}
+</code></pre>
+<p>And the second, if I have no value! Which is even simpler!</p>
+<pre><code class="language-java">// if I don't have any value
+class NullInt extends NullableInt {
+    public String toString() {
+        return &quot;Null&quot;;
+    }
+}
+</code></pre>
+<p>On the other hand, for the moment, I am no further ahead... indeed, I can do
+nothing with my incredible safety addition... don't panic, to make our class
+useful, we just need to be able to apply functions to our value, but ... what is
+a function in Java? It seems that there is, since
+<a href="https://www.java.com/en/download/help/java8_fr.html">Java8</a>, a feature called
+<a href="https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html">Lambda</a>...
+but let's be honest... who in real life wants to program using <strong>obscure Greek
+words</strong>? Fortunately, when you want to avoid <em>greeknessense</em> (γεια), you can use
+an even more <em>greeknessense</em> encoding presented in <a href="https://link.springer.com/book/10.1007/978-1-4419-8598-9">A Theory of
+Objects</a> by <a href="https://users.soe.ucsc.edu/~abadi/home.html">Martin
+Abadi</a> and <a href="https://en.wikipedia.org/wiki/Luca_Cardelli">Luca
+Cardelli</a>.</p>
+<p>Indeed, a &quot;lambda&quot; is nothing more than a class that implements a particular
+interface:</p>
+<pre><code class="language-java">interface FunctionFromIntToInt {
+  int call(int x);
+}
+</code></pre>
+<p>We can now define, without much verbosity, two functions: <code>Successor</code> and
+<code>Predecessor</code>. The <code>Successor</code> function takes an integer and returns, as its
+name suggests, its successor.</p>
+<pre><code class="language-java">class Successor implements FunctionFromIntToInt {
+    public int call(int x) {
+        return x + 1;
+    }
+}
+</code></pre>
+<p>The <code>Predecessor</code> function takes an integer and returns, as its name suggests,
+its predecessor.</p>
+<pre><code class="language-java">class Predecessor implements FunctionFromIntToInt {
+    public int call(int x) {
+        return x - 1;
+    }
+}
+</code></pre>
+<p>Another common function is the <code>identity</code> function, which in the case of integers
+could have been written as the application of successor and predecessor (and
+vice versa) can be described even more easily in this way:</p>
+<pre><code class="language-java">class Identity implements FunctionFromIntToInt {
+    public int call(int x) {
+        return x;
+    }
+}
+</code></pre>
+<p>With a tool to apply functions, we can now modify our API to be able to &quot;surely&quot;
+apply functions to our values. Nice. Indeed, we only need to add methods to our
+abstract class to be able to ... <em>deal</em>... with our null values:</p>
+<pre><code class="language-java">abstract class NullableInt {
+    abstract public NullableInt applyFunction(FunctionFromIntToInt f);
+    abstract public int fold(FunctionFromIntToInt isNotNull, int isNull);
+
+    public int getValueOrDefault(int defaultValue) {
+        return this.fold(new Identity(), defaultValue);
+    }
+}
+</code></pre>
+<p>As you can see, our abstract functions are expressive enough to describe the
+<code>getValueOrDefault</code> function which is a little masterpiece of mechanics (and
+yes, I told you, this blog is for lovers of beautiful mechanics... and muscles).
+Now, our two classes must implement the abstract methods... and yes... otherwise
+the code will not compile!</p>
+<p>Nothing could be simpler, each child class will take care to implement only what
+concerns it. So in the case where we have <code>NullInt</code>, it is sufficient to return
+a <code>NullInt</code> instance when applying a function. And in case of <code>fold</code> (a kind of
+<code>Visitor</code> to use the terminology of <strong>The Gang of Four</strong>, not to be confused
+with <strong>The Club of Five</strong>, <em>GO DAGOBERT!</em>), just return <code>isNull</code>.</p>
+<pre><code class="language-java">class NullInt extends NullableInt {
+    public NullableInt applyFunction(FunctionFromIntToInt f) {
+        return new NullInt();
+    }
+
+    public int fold(FunctionFromIntToInt isNotNull, int isNull) {
+        return isNull;
+    }
+    public String toString() {
+        return &quot;Null&quot;;
+    }
+}
+</code></pre>
+<p>Now that we take into account the case where the value does not exist, it is
+sufficient to implement the case for <code>Int</code>. Nothing could be simpler, when we
+want to apply a function... we just apply a function and for <code>fold</code> we execute
+<code>isNotNull</code> (which is a function):</p>
+<pre><code class="language-java">class Int extends NullableInt {
+    private int value;
+    public Int(int value) {
+        this.value = value;
+    }
+    public NullableInt applyFunction(FunctionFromIntToInt f) {
+        return new Int(f.call(this.value));
+    }
+
+    public int fold(FunctionFromIntToInt isNotNull, int isNull) {
+        return isNotNull.call(this.value);
+    }
+
+    public String toString() {
+        return &quot;&quot; + this.value;
+    }
+}
+</code></pre>
+<p>We have all the ingredients to build pipelines of computations on integers that
+can be <code>null</code> and all... without any <code>NullPointerException</code>. This is
+extraordinary. Without further ado, I'll give you some exclusive production code
+that uses this <strong>clever approach</strong>.</p>
+<pre><code class="language-java">public class ARealWorldService {
+    public static void main(String args[]) {
+      FunctionFromIntToInt succ = new Successor();
+      FunctionFromIntToInt pred = new Predecessor();
+      NullableInt myNullableInt = new Int(10);
+      NullableInt myOtherNullableInt = new NullInt();
+      System.out.println(myOtherNullableInt
+            .applyFunction(succ)
+            .applyFunction(pred)
+            .applyFunction(succ)
+            .getValueOrDefault(100)
+      );
+    }
+}
+</code></pre>
+<p>Terrific.</p>
+<h3>When problems arise</h3>
+<p>After putting this (micro-)service into production (in a Docker that mounts a
+JVM) many of my colleagues came to me for help in refactoring their services...
+they had to deal with <code>nullable strings</code>, <code>nullable doubles</code> etc. When you want
+to manipulate a lot of nullable types, you realise that in fact... what you
+want... are the templates of C++. Indeed, without methods to generalise
+nullability... the growth of <strong>the number of classes required can quickly
+explode</strong>.</p>
+<p>Fortunately... while immersing myself in existing Java code, I discovered a tool
+that allows me to save time. I called it &quot;<strong>type-dependent instances</strong>&quot;, because
+the only name I could find in the documentation was &quot;Generics&quot; (and I didn't see
+a connection with Bernard Minet, <em>a joke exclusively for French speakers</em>).</p>
+<h3>type-dependent instances</h3>
+<p>Java has a way of describing type variables in the class definition... which
+will allow this type to be fixed (monomorphised) at instance time. For example,
+we could redeclare our function <code>functionFromIntToInt</code> in this way:</p>
+<pre><code class="language-java">interface Function&lt;In, Out&gt; { Out call(In x); }
+interface EndoFunction&lt;T&gt; extends Function&lt;T, T&gt; {}
+interface FunctionFromIntToInt extends EndoFunction&lt;Integer&gt; {}
+</code></pre>
+<p>Surprisingly, this is a fairly well-known approach in Java (but I didn't know
+it) used to, for example... describe lists: <code>List&lt;A&gt;</code> where <code>A</code> is a (type)
+variable, but also to describe... optionality with <code>Optional&lt;A&gt;</code>. By the way,
+the ultimate form of refactoring my real-world-code would simply be to replace
+all my occurrences of <code>NullableInt</code> with <code>Optional&lt;Integer&gt;</code>. <strong>Wow</strong>.</p>
+<h3>Going further with type constraint</h3>
+<p>Incredible but the magic doesn't stop here. Indeed, it is possible to constrain
+the type of a type variable, using the syntax : <code>Class&lt;T extends S&gt;</code> which means
+the class <code>Class</code> is parameterised by a <code>T</code> <strong>which is a subtype of</strong> <code>S</code>.
+It is called a &quot;<em>Bounded Type Parameter</em>&quot;, but as I find the name unclear, I
+suggest using the term: &quot;<strong>type class</strong>&quot;, because the type is constrained by a
+class (or an interface, but it is the same thing). It is also possible to add
+several separate constraints using <code>&amp;</code>. Incredible. The documentation talks
+about &quot;<em>Multiple Bounds</em>&quot; but I also find this name unclear, so I propose to
+call it &quot;<strong>type family</strong>&quot; because all the constraints form a family.</p>
+<h3>To conclude</h3>
+<p>Incredibly, we have discovered a rather unknown feature of Java to facilitate
+refactoring. To summarise:</p>
+<ul>
+<li>A class can be parameterised by type variables, and I decided to call an
+instance that embodies this kind of class a <strong>type-dependent instances</strong>.
+</li>
+<li>This kind of class can have constraints on type variables. If there is only
+one constraint, I decided to call it a <strong>type class</strong> and if there are more
+than one constraint, I decided to call it a <strong>type family</strong>.
+</li>
+</ul>
+<p>Some people will tell me that <strong>dependent types</strong>, <strong>type classes</strong> and <strong>type
+families</strong> already exist in programming terminology but as mentioned previously
+<strong>let's be honest, who in real life wants to program using obscure Greek
+words?</strong></p>
+<p>I hope you enjoyed reading this, and see you soon for new articles!</p>
+
+    </article>
+
+        </main>
+    <footer>
+        <a href="https://github.com/xhtmlboi/yocaml">Powered by <strong>YOCaml</strong></a>
+        (snif, WordPress was definitively a better name)
+        <br />
+        <a class="valid" href="https://validator.w3.org/check?uri=https%3A%2F%2Fxhtmlboi.github.io&charset=%28detect+automatically%29&doctype=Inline&group=0">HTML5</a>
+        <a class="valid" href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fxhtmlboi.github.io%2Fcss%2Fstyle.css&profile=css3svg&usermedium=all&warning=1&vextwarning=&lang=en">CSS3</a>
+    </footer>
+    <script>hljs.highlightAll();</script>
+  </body>
+</html>

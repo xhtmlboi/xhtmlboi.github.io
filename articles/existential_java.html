@@ -1,0 +1,367 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+        XHTMLBoy's website - Understanding &quot;Existential Types&quot; with Java
+    </title>
+    <meta name="description" content="An existential type (or &quot;existentially quantified type&quot;) is a complicated type system fanatic thing. But to become a Java Champion, it&apos;s a must. Let&apos;s learn how to use it, in Java, of course.">
+    <link href="/css/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/hl.css">
+    <link href="/css/style.css" rel="stylesheet">
+    <script src="/js/hl.js"></script>
+    <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSSBoy">
+  </head>
+  <body>
+    <header>
+      <h1>XHTMLBoy's Website</h1>
+      <blockquote>
+        You are on a website dedicated to the enthusiasts of
+        (valid) <strong>XHTML</strong>, and of <strong>beautiful
+        mechanics</strong>.
+      </blockquote>
+    </header>
+    <main><a href="/index.html">Back to index</a>
+
+<article>
+    <h2>Understanding &quot;Existential Types&quot; with Java</h2>
+    <ul class="tags-list"><li><a href="/tags.html#tag-java">java</a></li><li><a href="/tags.html#tag-types">types</a></li><li><a href="/tags.html#tag-existential">existential</a></li><li><a href="/tags.html#tag-interface">interface</a></li></ul><blockquote>
+<p>Java is becoming, from version to version, more and more comfortable for
+functional programming (which can be very useful <strong>if you want to program with
+Greek</strong> words like <code>αλφα</code>, <code>βήτα</code>, <code>γάμα</code>, <code>φέτα</code> and <code>λάμδα</code>) it becomes
+convenient to understand the buzzwords used in languages that nobody uses to
+import their techniques and make 23rd century <em>enterprise</em> code. In this
+article, let's discover together a type system enthusiast's trick:
+<strong>existential types</strong>.</p>
+</blockquote>
+<blockquote>
+<p>By &quot;existential types&quot;, I don't mean &quot;types that exist&quot;, well yes, otherwise
+it would be super easy to describe, right? &quot;A type that exists&quot; is a type that
+exists, for example... <code>int</code>. <strong>No</strong>, by <em>existential</em> one could essentially
+draw a parallel with <a href="https://de.wikipedia.org/wiki/Immanuel_Kant">Kant</a>'s
+&quot;<strong>existentialism</strong>&quot;. <em>Pfrtt just kidding</em>, like almost everything else that
+seems to have a connection with philosophy, in functional programming, <strong>it
+actually has nothing to do with it</strong>, <a href="https://en.wikipedia.org/wiki/Monad_(functional_programming)">Haskell's
+monads</a>
+probably have nothing to do with <a href="https://de.wikipedia.org/wiki/Monade_(Philosophie)">Leibniz's
+monads</a>, and
+<a href="https://en.wikipedia.org/wiki/Arrow_(computer_science)">Arrows</a> share
+nothing with <a href="https://en.wikipedia.org/wiki/Robin_Hood">Robin Hood</a> or <a href="https://en.wikipedia.org/wiki/Bow_Wow_(rapper)">Shad
+Gregory Moss</a>. Ahah life is
+hard.</p>
+</blockquote>
+<p>Before fighting with Java to describe existential types (just kidding, it's
+actually <em>very easy</em>), I propose a small diversions to a very popular language in
+French research, <a href="https://ocaml.org">OCaml</a>, which allows to describe
+existentials <strong>quite easily</strong>.</p>
+<h3>OCaml diversions</h3>
+<p>OCaml is a very nice language with lots of tools for working with functions,
+algebraic types, modules and objects (even if I am far from being an expert in
+OCaml, I decided to use this language to write the <a href="https://github.com/xhtmlboi/yocaml">generator for my
+site</a>). Before the introduction of
+generalized algebraic types
+(<a href="https://web.cecs.pdx.edu/~sheard/papers/silly.pdf">GADTs</a>), the introduction
+of existential types could be expressed through <a href="http://okmij.org/ftp/Computation/Existentials.html">several
+encodings</a>. However, it was
+common to use only two relatively straigthforward methods. The first is to use
+<a href="https://en.wikipedia.org/wiki/Skolem_normal_form">Skolemization</a>, which is a
+trick to <strong>turn an existential quantification</strong> (<em>in its logical sense</em>) <strong>into
+a universal quantification</strong>, because yes, the term &quot;existential&quot; is closely
+related to its logical counterpart. The second was to use a <a href="https://ocaml.org/manual/firstclassmodules.html">first-class
+module</a>. I'm not going to
+present the first method because it's pretty far from what you would do in Java
+(and I want to become <strong>Java Champion</strong>, not OCaml Champion) and I'm not going
+to present the second one because it would be a <em>horrible spoiler</em> of this whole
+article!</p>
+<p>But since the introduction of <strong>GADTs</strong> (<em>a kind of sum type whose constructors
+can be non-surjective and which introduce <strong>local type equalities</strong></em>) it has
+become very easy to declare existential types because they are local types (we
+will see later why) and once we have local type equality, local type integration
+becomes trivial.</p>
+<p>Now that we have introduced a lot of jargon that is unnecessary for the
+understanding of this article, let's have a look at a real use case without
+further ado. <strong>Let's imagine that we have some types and we would like to
+<em>pretty-print</em> them in XML</strong> (a quality format). For example :</p>
+<pre><code class="language-ocaml">module Individual : sig
+  type t = {
+    name: string
+  ; age: int
+  }
+end
+</code></pre>
+<p>Which would be printed this way in XML:</p>
+<pre><code class="language-xml">&lt;individual age=&quot;38&quot; name=&quot;The XHTMLBoy&quot;/&gt;
+</code></pre>
+<p>And a contact book that would have a list of individuals:</p>
+<pre><code class="language-ocaml">module Contacts : sig
+  type t = Individual.t list
+end
+</code></pre>
+<p>Which would be printed this way in XML:</p>
+<pre><code class="language-xml">&lt;contacts&gt;
+  &lt;individual age=&quot;38&quot; name=&quot;The XHTMLBoy&quot;/&gt;
+  &lt;individual age=&quot;39&quot; name=&quot;Charlotte de Belfroid&quot;/&gt;
+&lt;/contacts&gt;
+</code></pre>
+<h4>A first approach, a direct encoding</h4>
+<p>There are many ways to write the serialization strategy. The first, and most
+obvious, would be to use direct encoding, i.e. to describe each serialization
+function individually. For example :</p>
+<pre><code class="language-ocaml">let concat_with f list =
+  List.fold_left
+      (fun buff x -&gt; &quot; &quot; ^ buff ^ (f x))
+      &quot;&quot; list
+
+let individual_to_xml individual =
+   Format.asprintf
+     &quot;&lt;individual age=\&quot;%d\&quot; name=\&quot;%s\&quot;/&gt;&quot;
+     individual.age
+     individual.name
+
+let contacts_to_xml contacts =
+  Format.asprintf
+  &quot;&lt;contacts&gt;%s&lt;/contacts&gt;&quot;
+  (concat_with individual_to_xml)
+</code></pre>
+<p>In our very simple example, it works quite well. The problem is that this method
+... doesn't <em>scale</em> much. Indeed, we have to keep in mind how to describe XML
+for each new element. <strong>What we want are generic combinators to build,
+generically, fragments of XML</strong>.</p>
+<h4>A widely better approach, an indirect encoding</h4>
+<p>Another approach would be to <strong>split</strong> the
+description of the structure of the XML and the structure of the entities being
+manipulated. For example, let's start by describing generically what an XML
+document is (in this example, for the sake of brevity, I am obviously assuming
+less than what an XML document actually is):</p>
+<pre><code class="language-ocaml">type attr =
+  | Int of int
+  | String of string
+
+type node = {
+  tag: string
+; attr:(string * attr) list
+; content: node list
+}
+
+let int key value = (key, Int value)
+let string key value = (key, String value)
+let node tag ~attr content = {tag; attr; content}
+</code></pre>
+<p>Now we can write a generic function that traverses a <code>node</code> (which is a
+recursive type) and turns it into XML. (To simplify the function I haven't dealt
+with the case of leaves, but don't worry, the XML produced is still valid).
+Don't rely too much on the code, it is written as an example only.</p>
+<pre><code class="language-ocaml">let rec to_xml {tag; attr; content} =
+  let attr_s = List.fold_left
+    (fun r (key, v) -&gt;
+      let value = match v with
+      | Int x -&gt; string_of_int x
+      | String x -&gt; x
+      in Format.asprintf &quot;%s %s=\&quot;%s\&quot;&quot; r key value
+     ) &quot;&quot; attr
+   in Format.asprintf &quot;&lt;%s%s&gt;%s&lt;/%s&gt;&quot;
+     tag attr_s (concat_with to_xml content) tag
+</code></pre>
+<p>Now I can use my structure within my modules, it is much easier to write than
+having to interpolate data everywhere, as was previously the case:</p>
+<pre><code class="language-ocaml">let individual_to_xml individual =
+   node
+      &quot;individual&quot;
+      ~attr:[ int &quot;age&quot; individual.age
+            ; string &quot;name&quot; individual.name ]
+      []
+
+let contacts_to_xml contacts =
+  node &quot;contacts&quot; ~attr:[] (List.map individual_to_xml contacts)
+</code></pre>
+<p>This approach looks good in every way, however, <strong>there is one aspect in which
+it is really bad</strong>... This method <strong>does not take advantage of existential
+types</strong> at all and therefore makes this article completely useless. I suggest
+that we <strong>add artificial constraints</strong> to our serialization routine to make
+sense of the use of existentials and that these examples be transposed to Java.
+One of these constraints could be, for example, to say that <strong>it is strictly
+forbidden to use an intermediate format</strong> because ... <em>lol</em>, I do what I want.</p>
+<h4>A cheaper approach, but one that takes advantage of existential types</h4>
+<p>If we want to avoid having an intermediate description (for no other reason than
+the pleasure of discovering existentials), one solution would be to compose, not
+constructors, but <em>pretty-printer functions</em>. So far so good, let's try to write
+an symetric function that compose <em>printers</em>:</p>
+<pre><code class="language-ocaml">let attr key f x = (key, f, x)
+let string key x = attr key Fun.id x
+let int key x = attr key string_of_int x
+let content f x = (f, x)
+
+
+let attr_to_string (k, f, x) =
+  Format.asprintf &quot;%s=\&quot;%s\&quot;&quot; k (f x)
+
+let content_to_string (f, x) = f x
+
+let node tag ~attr content =
+  Format.asprintf &quot;&lt;%s%s&gt;%s&lt;/%s&gt;&quot;
+    tag
+    (concat_with attr_to_string attr)
+    (concat_with content_to_string content)
+    tag
+</code></pre>
+<p>The type of our <code>node</code> function is :</p>
+<pre><code class="language-ocaml">val node :
+  string -&gt;
+  attr:(string * ('a -&gt; string) * 'a) list -&gt;
+  (('b -&gt; string) * 'b) list -&gt; string = &lt;fun&gt;
+</code></pre>
+<p>Yeah, it seems to work! Let's try a simple node : <code>node &quot;foo&quot; ~attr:[string &quot;name&quot; &quot;Antoine&quot;] []</code>, it returns <code>&quot;&lt;foo name=\&quot;Antoine\&quot;&gt;&lt;/foo&gt;&quot;</code>, Great, it
+works, <strong>we are brilliant</strong>! Let's try to write the function to transform an
+individual! An attentive reader may ask this very justified question: &quot;<em>why
+storint the elements and not directly applying the <code>attr_to_string</code> and
+<code>content_to_string</code> functions</em>?&quot; This is an excellent question. Essentially
+because <strong>once our transformation is applied, we can no longer act on it at
+all</strong>. So if I had, for example, optional fields, I'd have to build a combiner
+<strong>for each type and each optional type</strong> that I want to manipulate, which
+doesn't scale much.</p>
+<pre><code class="language-ocaml">let individual_to_xml individual =
+  node
+    &quot;individual&quot;
+    ~attr:[ string &quot;name&quot; individual.name
+          ; int &quot;age&quot; individual.age ]
+    []
+</code></pre>
+<p>And this... <strong>does not work</strong>. Because the <code>'a</code> of the <code>node</code> signature is set
+to <code>string</code> the first time <code>string</code> is used in the attribute list by
+<a href="https://en.wikipedia.org/wiki/Monomorphization">monomorphization</a>. The problem
+would have been the same for <code>content</code> if I had wanted to fill it with
+heterogeneous fields. <strong>What a mess</strong>!</p>
+<p>So at this point we are faced with an alternative:</p>
+<ul>
+<li>Apply the function directly and impose a potentially exponential growth of combinators.
+</li>
+<li>Not being able to describe the nodes one would like.
+</li>
+</ul>
+<p>It seems that we are faced with a Cornelian choice! What to take, the plague or
+cholera? Well, I suggest you choose <strong>neither</strong>! We will simply describe <strong>a
+type that hides</strong> the fact that we work on different types!</p>
+<pre><code class="language-ocaml">type attr =
+   | A : (string * 'a * ('a -&gt; string) ) -&gt; attr
+
+type content =
+   | C : ('a * ('a -&gt; string)) -&gt; content
+</code></pre>
+<p>As you can see, the variable of type <code>'a</code> only appears in the right-hand side of
+the type equation, <strong>this variable is an existential type</strong> (and this is only
+possible if you use the GADT syntax, for the reasons I mentioned at the
+beginning of the article). To understand the difference between a type variable
+that is <strong>existentially quantified</strong> and a <em>normal</em> type variable, I invite you to
+compare these two statements:</p>
+<pre><code class="language-ocaml">type 'a normal =
+   | Normal : 'a -&gt; 'a normal
+
+ type exists =
+   | Exist : 'a -&gt; exist
+</code></pre>
+<p>In the first declaration, the type is <strong>parametrized</strong> by <code>'a</code>, so the variable
+appears on the left and right of the equation. In the second declaration, the
+variable does not escape from the signature, so <strong>it denotes an existential
+type</strong>. For example, <code>Normal 10</code> will have the type <code>int normal</code> and <code>Exists 10</code>
+aura le type <code>exists</code> (Yeah, no more <em>leaking</em>).</p>
+<p>In general, types that involve existentials imply having two additional
+functions, <code>pack</code>, which will <strong>bury</strong> our data in our type (which defines one
+or more existential types) and <code>unpack</code> whose role will be to <strong>extract</strong> our
+values buried in the type. In fact our <code>pack</code> function is very similar to the
+<code>attr</code> and <code>content</code> functions we defined earlier, and <code>unpack</code> has
+<code>attr_to_string</code> and <code>content_to_string</code>. Let's modify our code to make it work:</p>
+<pre><code class="language-ocaml">let attr key f x = A (key, x, f)
+let string key x = attr key Fun.id x
+let int key x = attr key string_of_int x
+let content f x = C (x, f)
+
+
+let attr_to_string = function
+  | A (k, x, f) -&gt; Format.asprintf &quot;%s=\&quot;%s\&quot;&quot; k (f x)
+
+let content_to_string = function
+  | C (x, f) -&gt; f x
+</code></pre>
+<p>And the <code>node</code> function does not change at all, except that now it will have the
+type: <code>val node : string -&gt; attr:attr list -&gt; content list -&gt; string</code>. Our types
+<code>attr</code> and <code>content</code> hide <strong>the implementation details</strong>. And slightly more
+formally the <code>pack</code> function, generally, associates a value with a strategy for
+normalising that value, in this case, a string projection function. So we could
+say that the <code>pack</code> function guarantees that a type <strong>exists</strong> such that it can be
+consumed in a certain way. That's why we talk about &quot;existential types&quot;.</p>
+<p>Now that we have seen what existentials are in a very artificial example, we can
+go back to a real language, Java.</p>
+<h3>Existential types in Java</h3>
+<p>Even though Java is becoming more modern every day (which explains my obsession
+to becoming a Java <strong>champion</strong>), the language does not allow to describe
+complicated stuff like GADTs. <strong>So how can we describe existentials?</strong> (<em>What a
+clue!</em>)</p>
+<p>You may not believe me, but in the world of <em>enterprise</em> code, it is even easier
+to describe existentials and here is an example partially similar to the one we
+described in OCaml:</p>
+<pre><code class="language-java">// I could have named it AbstractBeanXmlAttribute
+interface XMLAttr {
+  String toXMLAttr()
+}
+
+// I could have named it AbstractBeanXmlAttribute
+interface XMLContent {
+  String toXMLContent()
+}
+</code></pre>
+<p>And our previous <code>node</code> function, (assuming that functions to transform a list
+of attributes into a string and a list of contents into a string are available,
+of course):</p>
+<pre><code class="language-java">class XMLNode implements XMLContent {
+   private String tag;
+   private List&lt;XMLAttr&gt; attr;
+   private List&lt;XMLContent&gt; content;
+   public XMLNode(String tag, List&lt;XMLAttr&gt; attr, List&lt;XMLContent&gt; content) {
+     this.tag = tag;
+     this.attr = attr;
+     this.content = content;
+   }
+
+   String toXMLContent() {
+    return
+      &quot;&lt;&quot; + this.tag + createXMLAttributesStr(this.attr) + &quot;&gt;&quot;
+    + createXMLContentStr(this.content)
+    + &quot;&lt;/&quot;+ this.tag + &quot;&gt;&quot;;
+   }
+}
+</code></pre>
+<p>And so... existentials in Java would be <strong>nothing more than instantiated objects
+of classes that implement interfaces</strong>? Not really, it's even more pervasive
+than that! Interfaces (but not only, any form of <em>polymorphisms related to
+overtyping</em>) <strong>make it possible to produce abstract representations of
+behaviour</strong>. Moreover, <strong>encapsulation</strong> is at the heart of the fundamental
+idioms of object-oriented programming.</p>
+<p>As we have seen in OCaml, an existential type hides implementation details (like
+encapsulation in OOP where the internal state of the object is generally hidden,
+hence the famous <em>Blackbox analogy</em>) and provides a proof of the existence of a
+consumption strategy. This is exactly the &quot;contract&quot; part of an interface. As a
+result, it is possible to treat uniformly instances of different classes
+implementing the same interface (or several). This analogy between objects (and
+more generically, <strong>abstract types</strong>) has long been known (1988), indeed
+<a href="https://homepages.inf.ed.ac.uk/gdp/publications/Abstract_existential.pdf">Abstract types have existential
+type</a>.</p>
+<p>So, what can we learn from this article? Well... <strong>that you already know the
+existential types</strong>, it's just that you call them, <em>probably differently</em>.</p>
+<p>I hope you enjoyed reading this, and see you soon for new articles!</p>
+
+    </article>
+
+        </main>
+    <footer>
+        <a href="https://github.com/xhtmlboi/yocaml">Powered by <strong>YOCaml</strong></a>
+        (snif, WordPress was definitively a better name)
+        <br />
+        <a class="valid" href="https://validator.w3.org/check?uri=https%3A%2F%2Fxhtmlboi.github.io&charset=%28detect+automatically%29&doctype=Inline&group=0">HTML5</a>
+        <a class="valid" href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fxhtmlboi.github.io%2Fcss%2Fstyle.css&profile=css3svg&usermedium=all&warning=1&vextwarning=&lang=en">CSS3</a>
+    </footer>
+    <script>hljs.highlightAll();</script>
+  </body>
+</html>
