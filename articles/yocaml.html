@@ -1,0 +1,1677 @@
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>
+        XHTMLBoy's website - Some highlights of how this blog is generated
+    </title>
+    <meta name="description" content="Being a Java Champion means communicating. To communicate, you need communication channels. What better way to talk about silly things than with a stark blog? In this article, we&apos;ll show you how this blog works.">
+    <link href="/css/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/hl.css">
+    <link href="/css/style.css" rel="stylesheet">
+    <script src="/js/hl.js"></script>
+    <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSSBoy">
+  </head>
+  <body>
+    <header>
+      <h1>XHTMLBoy's Website</h1>
+      <blockquote>
+        You are on a website dedicated to the enthusiasts of
+        (valid) <strong>XHTML</strong>, and of <strong>beautiful
+        mechanics</strong>.
+      </blockquote>
+    </header>
+    <main><a href="/index.html">Back to index</a>
+
+<article>
+    <h1>Some highlights of how this blog is generated</h1>
+    <ul class="tags-list"><li><a href="/tags.html#tag-ocaml">ocaml</a></li><li><a href="/tags.html#tag-effect">effect</a></li><li><a href="/tags.html#tag-preface">preface</a></li><li><a href="/tags.html#tag-blog">blog</a></li></ul><blockquote>
+<p>For several years (approximately 2), my friends
+<a href="https://twitter.com/dplaindoux">Didier</a>, <a href="https://twitter.com/grimfw">Pierre</a>
+and <a href="https://twitter.com/vdwxv">Xavier</a> (<em>that helped me so much in the
+writing of this article and designing diagrams, that he could easily be
+considered a co-author</em>) worked on <strong>a very complicated library to do very
+complicated things</strong>: <a href="https://github.com/xvw/preface/">Preface</a>. As mentioned
+in the README, the library is probably not very useful, but it allows you to
+develop in a rather funny style with lots of modules and weird names. After
+several months of development, as the only use of the library was in its unit
+tests. Xavier cordially asked me to experiment by building a concrete project
+with it. Although <strong>I didn't know OCaml</strong>, I assumed that it is the
+responsibility of a Java Champion to be versatile (so learn OCaml) but also to
+communicate (so have a blog). I started to create a static blog generator,
+which I modestly called <a href="https://github.com/xhtmlboi/yocaml">&quot;<em>Wordpress</em>&quot;</a>
+(the name has since been changed, for <strong>YOCaml</strong>, for obscure and debatable
+reasons). When the project started to be usable, it received input from
+several people to try to make it <strong>really</strong> usable. The content of the article
+differs slightly from the current implementation for <em>pseudo-pedagogical</em>
+reasons.</p>
+</blockquote>
+<blockquote>
+<p>In this article, I will show you how a (future) Java Champion uses OCaml to
+test a library and build <strong>real software</strong>. It's possible that this article
+duplicates Xavier's presentation &quot;<strong>Pratically unpractical Functional
+Programming for practical software</strong>&quot;. But don't worry, my aim is not to give
+the point of view of <em>an obscure rigorous OCaml programmer</em>, but to observe
+some implementation details under the eyes of a <strong>pragmatic developer</strong>,
+writing daily Go! and Java who decided... well, to learn OCaml. And since the
+pillars of YOCaml were described in a rather interactive Slack conversation,
+and I wasn't very inspired to write a new article, here's a selection of some
+tips and tricks used in the development of my static blog generator.</p>
+</blockquote>
+<p>While one might question the practical viability of a static blog generator as a
+&quot;real-world example&quot;, testing a library in a real-world context (however futile
+a static blog generator may be) can quickly cover usability or restriction
+issues. For example, several months after the merger of <em>Freer monad</em> into the
+main branch, <a href="https://github.com/xvw/preface/issues/84">a very cute ticket</a> was
+raised (fortunately, <a href="https://github.com/xvw/preface/pull/87">a correction</a> has
+been proposed). To avoid this kind of unforeseen problem, I decided to find a
+project that covered several of the less popular and generally less understood
+tools offered by Preface. Against all expectations... a static blog generator
+requires many of these tools and as a future Java Champion needs to communicate,
+I could ... kill two birds with one <a href="https://github.com/gr-im">stone</a>.</p>
+<p>The general idea behind a static blog generator is quite easy, it is a
+special case of a build system. Great, the excellent paper <a href="https://www.microsoft.com/en-us/research/uploads/prod/2018/03/build-systems.pdf">&quot;Build Systems à la
+Carte&quot;</a>
+provides a formal description (and implementation paths). Although Preface had
+all the necessary tools to respect the paper's implementation proposals...
+well... I was not aware of its existence when writing my
+implementation. That's a shame. Not being educated, I narrowed the scope of my
+experiment considering, somewhat naively, that a static blog generator is
+satisfied with :</p>
+<ul>
+<li>copy/paste files (for example moving a style sheet or images)
+</li>
+<li>read file
+</li>
+<li>processing file content
+</li>
+<li>writing file
+</li>
+</ul>
+<p>Listing the actions that a generator must be able to perform, one quickly
+realizes that in fact... a static blog generator can very easily be implemented
+with <code>make</code> (and in addition <code>sed</code> and <code>awk</code>), but this would not really serve
+the cause of Preface! Anyway, here's an example of the typical flow you'd expect
+from a generator:</p>
+<p><img src="/images/yocaml-flow.png" alt="Here is a flow" /></p>
+<p>Nothing very complicated, we move the static files (here, the CSS and the
+images) to the target. Then we inject the pages into the templates and move them
+to the target, then we process the articles (the markdown files) and inject them
+into the templates and move them, too, to the target. After all this, we can
+produce an index, which will probably be injected into a template and also moved
+to the target.</p>
+<p>Now that we have the general flow of our generator, there are two considerations
+I would like to add. Firstly, I would like the generator to serve several use
+cases. It is therefore imperative that it not be restricted to a static file
+tree (imagine I wanted to create a <a href="https://bastienduplessier.github.io/angry_cuisine_nerd/">cooking
+blog</a>, listing recipes,
+I would find it <strong>morally unacceptable</strong> for the recipes to be in the <code>articles</code>
+directory). The second point concerns <strong>minimality</strong>. In other words, build only
+those artifacts <strong>that need to be built</strong>. (Since cryptocurrency miners use
+continuous integration service providers to mine bitcoin, saving computational
+time to generate during the continuous integration process is a must!)</p>
+<p>The first point is fairly easy to address, just provide the generator as a
+library rather than as a binary. Backed by a rich API, a user (me) can build his
+generator with flexibility and not be locked into the rigid shackles of
+<em>convention over configuration</em>.</p>
+<p>The second point is that we need to look a little more closely at the definition
+of minimality.</p>
+<h3>Minimality</h3>
+<p>Before diving into the code, it is important that we agree on the terms we will
+use. As mentioned earlier, by &quot;minimality&quot; I mean &quot;<em>the pressimistic reduction
+of the operations to be performed in order to construct an artifact</em>&quot;. For
+example, let's imagine this scenario: we have 4 files needed to produce the
+<code>a.out</code> and <code>b.out</code> files. The first, <code>a.md</code> depends on <code>A</code> and the second,
+<code>b.md</code> depends on <code>A</code> and <code>B</code>. Let's see what happens if we change some files in
+the dependency graph. (In the example, a file that has been modified is drawn in
+red):</p>
+<p><img src="/images/minimality2.png" alt="Minimality: scenario 2" /></p>
+<p>Even if everything can be a little more complicated when dynamic dependencies
+are introduced (an element of the dependency graph which must be read to
+calculate ad hoc dependencies, but which will not be dealt with in this article,
+to avoid writing a 2000-page article), we would still like, in many cases, to
+reduce the calculation graph as much as possible <strong>when the dependencies are
+known statically</strong>.</p>
+<p>Now that we agree on the terminology, we can go over some of the techniques used
+in the development of the blog generator!</p>
+<h2>About effect handling</h2>
+<p>When following the hype of the new generation of functional programming
+languages, one is often confronted with the problem of <strong>effects management</strong>.
+Yeah, effects are annoying because they often force the execution platform
+(imagine you want to run a generator in a browser), but <strong>effects are useful for
+making useful software</strong>.</p>
+<p>There are <strong>monadic effects</strong> (or how to confine all troubles in a data of type
+<code>IO a</code>), there is <strong>algebraic effects</strong> adjoined to <strong>handlers</strong>,
+<strong>user-defined-effects</strong> (also adjoined to handlers, and generally to algebraic
+effects) or <strong>latent effects</strong>.</p>
+<p>OCaml, prior to <a href="https://discuss.ocaml.org/t/multicore-ocaml-september-2021-effect-handlers-will-be-in-ocaml-5-0/8554#recap-what-are-effect-handlers-1">version
+5</a>,
+has a very peculiar (but very popular in the <em>mainstream</em> language world) effect
+system: <strong>god-given effects</strong>, which could be soberly renamed &quot;<em>side effects</em>&quot;.
+Well, since OCaml handles effects on its own, why bother trying to process them
+&quot;properly&quot;? There are several ideological reasons which I will not detail, but
+essentially &quot;<em>to test the effects manager proposed by Preface</em>&quot;. Let me
+introduce you to the <strong>Freer Monad</strong>!</p>
+<h3>Describing and interpreting with Freer monad</h3>
+<blockquote>
+<p>The difference between Free and Freer monad is quite subtle (and mainly based
+on differences in encodings and prerequisites), in use they offer similar
+capabilities. However, as Freer is significantly more efficient than Free, I
+have taken to using it exclusively. If you are familiar with Free, Freer is
+very accessible.</p>
+</blockquote>
+<p>When writing programs that produce effects, a fairly standard technique is to
+<strong>separate the description of the program from its interpretation</strong>. The trick
+is to turn the execution of an effect into a value. We will only produce data
+structures, i.e. descriptions of programs, and we can provide them with an
+interpreter to concretely execute this program. Preface offers a fairly
+straightforward way to build descriptions and interpreters. We start by
+describing the operations that the program will be able to perform. For the
+example, I propose to reason about a program that can write or read (on the
+standard output) :</p>
+<pre><code class="language-ocaml">type _ operation =
+  | Print : string -&gt; unit operation
+  | Read : string operation
+</code></pre>
+<p>And now we can build the combinators needed to describe programs by building a
+Freer monad for the <code>operation</code> type:</p>
+<pre><code class="language-ocaml">module Effect = Make.Freer_monad.Over (struct
+  type 'a t = 'a operation
+end)
+</code></pre>
+<p>The construction of tools for effects management produces, among other things,
+two very useful functions.</p>
+<ul>
+<li><code>Effect.perform : 'a operation -&gt; 'a Effect.t</code>: the ability to transform a
+constructor (from <code>operation</code>) into an effect
+</li>
+<li><code>Effect.run : 'a Effect.handler -&gt; 'a Effect.t -&gt; 'a</code>: which takes an effect
+handler, a program description and runs the program.
+</li>
+</ul>
+<p>Using the first function (<code>perform</code>) we can easily describe a program, for
+example, let's just describe a program that displays <code>&quot;Hello World&quot;</code>, asks the
+user to enter a value and displays <code>&quot;Hello&quot;</code> and the freshly entered value.</p>
+<pre><code class="language-ocaml">let print msg = Effect.perform (Print msg)
+let read = Effect.perform Read
+
+let program =
+  let open Effect in
+  let* () = print &quot;Hello World&quot; in
+  let* name = read in
+  print (&quot;Hello &quot; ^ name)
+</code></pre>
+<p>Note that the use of <code>let*</code> allows us to hide the fact that we are, in fact,
+manipulating a monad and allows us to describe our program in a style close to
+the direct style. Just use <code>let*</code> whenever you use a function described by the
+use of <code>perform</code>. The type of our program will be <code>unit Effect.t</code> and we now
+need to interpret it to give it an operational meaning. Let's write an
+interpreter for our set of effects:</p>
+<pre><code class="language-ocaml">let handler : type b. (b -&gt; 'a) -&gt; b Effect.f -&gt; 'a =
+ fun continue -&gt; function
+  | Print message -&gt;
+    print_endline message;
+    continue ()
+  | Read -&gt;
+    let line = read_line () in
+    continue line
+</code></pre>
+<p>Interpreting an effect program isn't that complicated, you need to invoke a bit
+of ceremony to properly quantify the type variables (and yes, Freer uses an
+<a href="existential_java.html">existential type</a>, which makes inferring an interpreter
+impossible, hence why we should talk about
+<a href="https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.88.778&amp;rep=rep1&amp;type=pdf">iso-existential</a>
+rather than existential), but once our type variables are properly quantified, a
+handler is nothing more than a pattern match on all the effects a program can
+produce, we execute the desired action and &quot;<strong>continue</strong>&quot; the program with what
+we just computed. At this stage, one can already quickly realise that it is
+possible to define an interpreter/handler according to the execution context. We
+could easily interpret our program in the context of the browser:</p>
+<pre><code class="language-ocaml">external console : unit -&gt; hook Js.t = &quot;caml_js_get_console&quot;
+
+let handler_js : type b. (b -&gt; 'a) -&gt; b Effect.f -&gt; 'a =
+ fun continue -&gt; function
+  | Print message -&gt;
+    (console ()) ## log (Js.string message)
+    continue ()
+  | Read -&gt;
+    let line = Dom_html.window ## prompt (Js.string &quot;read&quot;) (Js.string &quot;&quot;) in
+    continue (Js.Opt.case (fun () -&gt; &quot;&quot;) Js.to_string line)
+</code></pre>
+<p>Yes, JS (especially in OCaml) is a bit verbose, but as you can see, you can
+change the execution context without touching the original program. One slight
+modification we could make to our interpreter for JavaScript would be to discard
+the continuation if the return of <code>prompt</code> is empty (not filled) but let's not
+dwell on the JavaScript.</p>
+<p>Now that we have all the ingredients, we can actually run our program! And to do
+this, we'll simply use the <code>run</code> function defined in the <code>Effect</code> module:</p>
+<pre><code class="language-ocaml">let () = Effect.run { handler } program
+</code></pre>
+<p>This section was a quick overview of effects management with Preface, there is a
+<a href="https://github.com/xvw/preface/blob/master/guides/freer_effect_handling.md">more detailed
+guide</a>
+in the Github repository which, if you are interested in the subject, I invite
+you to read and if you are really interested in the subject and you, unlike me,
+are able to read complicated papers, I invite you to read <a href="https://okmij.org/ftp/Computation/free-monad.html"><em>Free and Freer
+Monads: Putting Monads Back into
+Closet</em></a></p>
+<h3>Handler's composition</h3>
+<p>In the paper &quot;<a href="http://www.cs.ru.nl/~W.Swierstra/Publications/DataTypesALaCarte.pdf"><em>Data Type à la
+Carte</em></a>&quot;, a
+proposal of composition is given. Indeed, as in a Free monad, one builds a monad
+(for free) on top of a functor, it is enough to compose functors and to build a
+monad on top of the result of this composition. Although it is possible to
+propose a similar encoding for Freer (where the type on which the monad is built
+for free does not have to be a functor), I found it a bit verbose and boring...
+My proposal (which is also verbose and boring) is to centralise the definition
+of effects in a single type and to use a <strong>phantom type</strong> to allow only certain
+types to be indexed. But to have a flexible indexing (we would like to be able
+to selectively choose the effects we decide to interpret) we need to have a
+minimal support of <strong>row polymorphism</strong>. In OCaml, a restricted form of row
+polymorphism can be supported for sums by means of <a href="https://caml.inria.fr/pub/papers/garrigue-polymorphic_variants-ml98.pdf">polymorphic
+variants</a>
+and for products by means of
+<a href="https://caml.inria.fr/pub/docs/u3-ocaml/ocaml-objects.html">objects</a>. In YOCaml
+I used objects, but on reflection I find polymorphic variants easier to read.
+Let's change our operations to add an index:</p>
+<pre><code class="language-ocaml">type ('index, 'normal_form) operation =
+  | Print : string -&gt; ([&gt; `Print ], unit) operation
+  | Read : ([&gt; `Read ], string) operation
+  | Print_foo : ([&gt; `Print_foo ], unit) operation
+  | Print_bar : ([&gt; `Print_bar ], unit) operation
+</code></pre>
+<p>Even though our operations have changed, we don't need to change much in our
+original handler so that it only supports <code>Print</code> and <code>Read</code>:</p>
+<pre><code class="language-ocaml">module Effect_A = Preface.Make.Freer_monad.Over (struct
+  type 'a t = ([ `Print | `Read ], 'a) operation
+end)
+
+let handler_a : type b. (b -&gt; 'a) -&gt; b Effect_A.f -&gt; 'a =
+ fun continue -&gt; function
+  | Print message -&gt;
+    print_endline message;
+    continue ()
+  | Read -&gt;
+    let line = read_line () in
+    continue line
+</code></pre>
+<p>Without going into detail, our handler which only supports the <code>Print</code> and
+<code>Read</code> effects is complete, and we can now create a module for the <code>Print_foo</code>
+and <code>Print_bar</code> operations and a handler:</p>
+<pre><code class="language-ocaml">module Effect_B = Make.Freer_monad.Over (struct
+  type 'a t = ([ `Print_foo | `Print_bar ], 'a) operation
+end)
+
+let handler_b : type b. (b -&gt; 'a) -&gt; b Effect_B.f -&gt; 'a =
+ fun continue -&gt; function
+  | Print_foo -&gt;
+    print_endline &quot;Foo&quot;;
+    continue ()
+  | Print_bar -&gt;
+    print_endline &quot;bar&quot;;
+    continue ()
+</code></pre>
+<p>And now that we have handlers for the different parts of the effects that we
+would like to be able to handle independently, we can create the module and the
+general handler, which handles the intersection of <code>Effect_A</code> and <code>Effect_B</code>
+<strong>by exploiting the handlers written earlier</strong>!</p>
+<pre><code class="language-ocaml">module Full = Make.Freer_monad.Over (struct
+  type 'a t = ([ `Print | `Read | `Print_foo | `Print_bar ], 'a) operation
+end)
+
+let handler : type b. (b -&gt; 'a) -&gt; b Full.f -&gt; 'a =
+ fun continue -&gt; function
+  | Print _ as e -&gt; handler_a continue e
+  | Read -&gt; handler_a continue Read
+  | Print_foo -&gt; handler_b continue Print_foo
+  | Print_bar -&gt; handler_b continue Print_bar
+</code></pre>
+<p>Some may say that we could have compacted the implementation of our handler
+composition... this is true but as each branch of the type has a different
+indexing and normal form, we would have had to be tricky and the final code
+would probably not have been readable.</p>
+<p><em>So far so good</em>, it is possible to compose handlers... is this useful in
+YOCaml... <strong>absolutely not</strong>. I just thought it was fun to experiment with
+another approach to effects handler composition which seems to be a restricted
+(but simpler) version of the <a href="https://okmij.org/ftp/Haskell/extensible/tutorial.html"><code>Eff</code>
+monad</a>. OCaml making the
+expression of rows simpler (<em>from my point of view</em>) than Haskell.</p>
+<p>Now that we have described all the stuff needed to manage effects (and that
+Preface offers, globally, sufficient tools), we will be able to look at the
+effects described in YOCaml to provide the tools needed to build static pages.</p>
+<h3>YOCaml effects</h3>
+<p>We've seen how to explicitly handle effects with Preface, and how,
+unnecessarily, to be able to compose different handlers, now let's see what
+effects we would want to propagate in a static blog generator. This is, in fact,
+a slightly more comprehensive list than the one mentioned in &quot;<em>What I want from
+a static blog generator</em>&quot;, mentioned in the introduction to this article:</p>
+<ul>
+<li>we want to know if <strong>a file exists</strong>, if only to know whether to build an
+artifact. If it does not exist, we can guarantee that it must be created
+</li>
+<li>we want to know the <strong>modification date</strong> of an artifact, in fact, if an
+artifact exists, we want to know if it must be recreated (in the case of
+static dependencies)
+</li>
+<li>we would like to be able to <strong>read a file</strong> (i.e., pass from its name to a string
+that contains the contents of the file)
+</li>
+<li>we would also like to be able to <strong>write files</strong> (thanks <em>Captain Obvious</em>)
+</li>
+<li>to generalise some proccesses, we would like to be able to <strong>list the
+children</strong> of a directory
+</li>
+<li>for user feedback, we would like to <strong>log information and errors</strong>.
+</li>
+</ul>
+<p>This list of requirements (which is a little longer in the YOCaml
+implementation to handle more specific cases) can be transposed quite easily
+into a list of operations (indexed or not. For code reading, and because for the
+purposes of this article, we won't need to handle only certain parts of the
+effects).</p>
+<pre><code class="language-ocaml">type 'a operation =
+  | File_exists : filepath -&gt; bool operation
+  | Get_modification_time : filepath -&gt; int Try.t operation
+  | Read_file : filepath -&gt; filecontent Try.t operation
+  | Write_file : (filepath * filecontent) -&gt; unit Try.t operation
+  | Read_dir : (filepath * filepath predicate) -&gt; filepath list operation
+  | Log : string -&gt; unit operation
+  | Throw : Error.t -&gt; 'a operation
+</code></pre>
+<p>There is not much subtlety (<code>Try.t</code> is a type that represents a valid value or
+an error, it is an <code>Either</code> whose error type is fixed). Note also that the
+<code>Read_dir</code> effect takes a predicate as an argument to prefilter the scanned
+<code>children</code>. We can move everything into a module (<code>Effect</code> for example), build
+our <code>Freer monad</code> and then implement the effect propagation combinators (so we
+don't have to keep using <code>perform</code> whenever we want to propagate an effect).</p>
+<pre><code class="language-ocaml">include Make.Freer_monad.Over (struct
+  type 'a t = 'a operation
+end)
+
+let file_exists path = perform (File_exists path)
+let get_mtime path = perform (Get_modification_time path)
+let read_file path = perform (Read_file path)
+let write_file path content = perform (Write_file (path, content))
+let read_dir path predicate = perform (Read_dir (path, predicate))
+let log message = perform (Log message)
+let throw error = perform (Throw error)
+</code></pre>
+<p>An interesting point of this separation between the description of the program
+and its interpretation allows, for pedagogical reasons, not to worry about the
+interpreter at all. Rather than showing you soporific code that manipulates the
+file system, <strong>we can assume that our handler is correctly written</strong>, however,
+for reasons of logic, we will assume that the interpretation of the <code>Throw</code>
+effect will <strong>discard the execution of the continuation</strong>... and yes, if the code
+fails, we assume that we do not want to continue.. In addition, we can very
+<strong>easily build unit tests by providing a handler</strong> that, for example, hooks a
+file system into a mutable (or not) table. From now on, we can reason about the
+implementation of our blog generator without worrying about the concrete
+implementation of our functions. Great, isn't it?</p>
+<p>One might ask why some effects return <code>Try</code> values when it is possible to fail
+with <code>throw</code>. This is essentially to force the fact that a function can fail
+into the handler. So we can add this convenience function to our <code>Effect</code>
+module:</p>
+<pre><code class="language-ocaml"> let failable eff =
+    let* result = eff in
+    match result with
+    | Ok value -&gt; return value
+    | Error err -&gt; throw err
+</code></pre>
+<p>It runs an effect that may fail, and, if it fails, catches its error and throws
+it with <code>throw</code>, otherwise it returns (wrapped in an effect) the result of the
+successful computation. I think this is a good way of enforcing in the handler
+that a function can fail but keeping it easy to use by not requiring the use of
+two levels of monads (<code>Effect</code> and <code>Error</code>).</p>
+<p>This lengthy introduction has set out the requirements for starting to build a
+flexible library in earnest. The goal was to show that <strong>a <code>Freer monad</code> is simple
+enough to use</strong> and to lay the groundwork for building a true DSL for static page
+generation. Now we can look at the generation of pages while trying to ensure
+minimality.</p>
+<h2>Characterisation of a set of dependencies</h2>
+<p>Now that we have proudly described our primary operations... our effects, we can
+start looking at real problems! As mentioned in my expectations of a static blog
+generator, I want <strong>minimality</strong>! For example, let's say I want to build an
+<code>out</code> file which is the concatenation of <code>a.html</code> and <code>b.html</code>, i.e., in
+bash: <code>cat a.html b.html &gt; out</code>, or, as this diagram visually describes:</p>
+<p><img src="/images/deps.png" alt="Example of deps" /></p>
+<p>It is easy to see that the file <code>out</code> <strong>has as dependencies</strong> <code>a.html</code> and
+<code>b.html</code>. We could imagine more complex scenarios. For example, imagine that the
+concatenation of <code>a.html</code> and <code>b.html</code> could be added to a <code>c.html</code> file to
+produce a new <code>out2</code> file, as in this diagram:</p>
+<p><img src="/images/deps2.png" alt="Example of complexe deps" /></p>
+<p>In this much more complicated example, we can deduce that <strong>the dependencies of
+<code>out</code> are <code>a.html</code>, <code>b.html</code> and <code>c.html</code></strong>. <em>Elementary my dear reader</em>. After
+this huge investigation (and with a little foresight), we can deduce some rules
+about how to represent our set of dependencies:</p>
+<ul>
+<li>a dependency can only be present once (yes, if <code>a.html</code> is present twice... it
+doesn't matter)
+</li>
+<li>two sets of dependencies must be combinable, to produce a new set of
+dependencies
+</li>
+<li>it is possible for a file to have no dependencies, in other words, one must be
+able to describe a set of empty dependencies
+</li>
+</ul>
+<p>So, to recap, we are looking for &quot;<em>something</em>&quot; that can deal with the fact of
+not having dependencies (so has a neutral element), thus describing the absence
+of dependencies and that can be combined with other sets of dependencies
+(producing a new set of dependencies)... <strong>it is a monoid</strong> ! There was quite a
+clue in the chosen term &quot;<em>set of dependencies</em>&quot;, the more seasoned private
+investigators will have noticed... a <code>Set</code> of dependencies is ... a <code>Set</code> of
+dependencies (e.g. of <code>filepath</code>, where <code>string</code> represents a path) and ... a
+<code>Set</code> is a monoid, <em>elementary my dear</em>, where the <strong>neutral element</strong> is the
+empty set and <strong>the internal law of composition</strong> (informally called &quot;the
+<em>oplus</em> operator&quot;) is the set union.</p>
+<p>Here is a proposal for the <code>Deps</code> module which will describe a set of
+dependencies and define some useful combinators. For now, we just export the
+fact that it is a
+<a href="https://ocaml-preface.github.io/preface/Preface_specs/Monoid/index.html">monoid</a>
+(in a <em>Preface sense</em>) and provide a function to convert a list of `filepaths'
+into a set of dependencies:</p>
+<pre><code class="language-ocaml">module Deps : sig
+  type t
+
+  val of_list : filepath list -&gt; t
+  val singleton : filepath -&gt; t
+
+  include Specs.MONOID with type t := t
+end = struct
+  module S = Set.Make (String)
+
+  let of_list = S.of_list
+  let singleton = S.singleton
+
+  include Make.Monoid.Via_combine_and_neutral (struct
+    type t = S.t
+
+    let neutral = S.empty
+    let combine = S.union
+  end)
+end
+
+</code></pre>
+<p>In this context, leaving the set of dependencies abstract allows, in the near
+future, to change the representation (if, by chance, I find a better
+representation one day). Now that we have a fairly naive definition of a set of
+dependencies, we can implement <strong>useful</strong> combinators!</p>
+<h3>Interweaving of dependencies and effects</h3>
+<p>Now that we have a robust representation of a set of dependencies (or, at best,
+an abstract, hence substitutable, representation), we can tackle the
+exploitation of our effects to answer a fundamental question in the generation
+of a static blog: &quot;<strong><em>should an artifact be rebuilt or not?</em></strong>&quot; To answer this
+very complicated question, we must first solve this very complicated <em>equation
+system</em>:</p>
+<ul>
+<li>if the artifact does not exist, <strong>it must be constructed</strong>
+</li>
+<li>If the artifact exists, mind you, here's the complicated maths, is its
+modification date greater than all the modification dates of the dependencies?
+(In other words, is the modification date of the artifact greater than the
+largest date of the dependencies). <strong>If yes, then the artifact should not be
+rebuilt, otherwise it should be rebuilt</strong>
+</li>
+</ul>
+<p>We know how to get the modification date of a file, just use <code>Effect.(failable (get_mtime file))</code>
+but how do we handle a list (for dependencies)? In general,
+when you want to apply an operation on a list, you use <code>map</code>. The problem is
+that here, applying <code>failable . get_mtime</code> with <code>map</code> will give us a list of
+<code>int Effect.t</code> which is not very practical to use... Fortunately, when one does
+not know how to solve a problem in functional programming, there is a canonical
+answer: &quot;<strong><em>it is traverse</em></strong>&quot;. And in this case, is <strong>sequence</strong>, which is a
+special case of <em>traverse</em>... so it is indeed traverse. In practical terms,
+<code>Traversable</code> allows us to switch from a list of effects to a list effect.
+First, let's define a traversable list of effects, and then a function which
+takes a list of <code>filepath</code> and returns an effect which contains the list of
+<code>mtime</code>:</p>
+<pre><code class="language-ocaml">module Traverse = List.Monad.Traversable (Effect)
+
+let get_mtimes list =
+  List.map Effect.(fun file -&gt; failable (get_mtime file)) list
+  |&gt; Traverse.sequence
+</code></pre>
+<p>Great! We now have a function of type <code>filepath list -&gt; int list Effect.t</code> and
+we can use it to implement the <code>Deps.need_update</code> function in accordance with
+the very complicated equation system mentioned above! As we have implemented all
+the requirements previously, the implementation of <code>need_update</code> is fairly
+trivial.</p>
+<pre><code class="language-ocaml">let need_update deps target =
+  let open Effect in
+  let* exists = file_exists target in
+  if exists
+  then
+    let* target_time = failable (get_mtime target) in
+    let+ deps_times = get_mtimes (S.elements deps) in
+    List.exists (fun deps_time -&gt; deps_time &gt; target_time) deps_times
+  else return true
+</code></pre>
+<p>Everything seems to be going well! We have all the plumbing for &quot;<em>doing things</em>&quot;
+by means of the <code>Effect</code> module and now we can describe sets of dependencies and
+check that an artifact is to be built (and ensure minimality). Now we need to
+build an API (or DSL) to provide the opportunity to build artifacts.</p>
+<h2>Definition of building rules</h2>
+<blockquote>
+<p>This part is strongly inspired, with the author's consent, by the presentation
+&quot;<a href="http://xvw.github.io/talks/lambdalille-kotlin-arrow/support.pdf">Kotlin for functional programming? A brief introduction of
+Arrow</a>&quot; by
+<a href="https://xvw.github.io">Xavier</a>, which briefly explains how YOCaml works
+(after an extraordinarily irrelevant introduction)..</p>
+</blockquote>
+<p>The crux of the problem in a static site generator is ... generally, to <strong>write
+files that are the composition of several files</strong>. For example, let's imagine a
+minimalist blog, here is how we would like to create an article (without any
+consideration of effect management, think of it as pseudo-code):</p>
+<pre><code class="language-ocaml">let create_article file =
+  let content = read_file file in
+  Markdown.from_text content in
+  |&gt; inject_into &quot;templates/article.tpl.html&quot;
+  |&gt; inject_into &quot;templates/layout.tpl.html&quot;
+  |&gt; write_file ~into:&quot;articles/&quot; (change_extension file &quot;html&quot;)
+</code></pre>
+<p>If we invoke <code>create_article &quot;my_first_post.md&quot;</code> we can make a first
+observation. The target is <code>articles/my_first_post.html</code> and the dependencies
+are <code>my_first_post.md</code>, <code>templates/article.tpl.html</code> and
+<code>templates/layout.html</code>. In the current form, it is not possible to do static
+analysis properly. However, the example captures an interesting insight, each
+step must describe dependencies. Let's start with the generator atom, reading a
+file.</p>
+<p>To begin, we will define a type that will describe <strong>an action attached to
+dependencies</strong>. It is a kind of function, which produces an effect (and yes,
+we'll probably have to tinker with the file system) and which is attached to a
+set of dependencies.</p>
+<pre><code class="language-ocaml">type ('a, 'b) t =
+  { deps : Deps.t
+  ; task : 'a -&gt; 'b Effect.t
+  }
+</code></pre>
+<p>The advantage of this type is that it is easy to guess how to use it to create a
+file. Here is a proposal:</p>
+<pre><code class="language-ocaml">let create_file target { deps; task } =
+  let open Effect in
+  let* need_update = Deps.need_update deps target in
+  if need_update
+  then
+    let* () = log &quot;need to be created&quot; in
+    let* content = task () in
+    failable (write_file target content)
+  else log &quot;nothing to do&quot;
+</code></pre>
+<p>This function has the type <code>filepath -&gt; (unit, string) t -&gt; unit Effect.t</code>.
+Specifically, it takes a path (the file we want to create), and a value of the
+type we have previously defined and <strong>if the file is to be created, it writes
+it, otherwise it does nothing</strong>. Now that we can create files... let's implement
+a first action (a value of type <code>('a, 'b) t</code> to <strong>read a file</strong>. reading a file
+<strong>generates only one dependency, the file to be read</strong>:</p>
+<pre><code class="language-ocaml">let read_file file =
+  { deps = Deps.singleton file
+  ; task = (fun () -&gt; Effect.(failable (read_file file)))
+  }
+</code></pre>
+<p>The type of <code>read_file</code> is <code>filepath -&gt; (unit, string) t</code>. Perfect! This is just
+the type we need to test our <code>create_file</code> function!</p>
+<pre><code class="language-ocaml">let rule = create_file &quot;my_page.html&quot; (
+  read_file &quot;my_page.markdown&quot;
+)
+</code></pre>
+<p>Here, our variable <code>rule</code> has the type <code>unit Effect.t</code>, so in order to performs
+the file generation it is necessary to <strong>interpret it</strong>, exactly as we saw
+previously.</p>
+<pre><code class="language-ocaml">Effect.run { handler = my_handler } rule
+</code></pre>
+<p>We can read the contents of a file and write it elsewhere, but we would like to
+be able to apply a transformation to the contents of the file. For example, we
+would like to be able to transform the content of our file (which seems to be
+written in Markdown, given its extension) into HTML. As long as we have a
+function that transforms Markdown into HTML, writing the action that
+takes care of it seems quite trivial. As the action must act on content that has
+already been read, we know that the action will have no dependency, we can
+therefore use <strong>the neutral element of our monoid as a dependency</strong>.</p>
+<pre><code class="language-ocaml">let process_markdown =
+  { deps = Deps.neutral
+  ; task = (fun x -&gt; Effect.return (Markdown.to_html x))
+  }
+</code></pre>
+<p>Let's have fun seeing that <strong>we can, in fact, lift any unary function into an
+action</strong>! And yes, a function (which for example acts on strings) will have no
+dependencies (so it's just the neutral element of our monoid) and
+<code>Effect.return</code> allows to promote any regular value in a value wrapped in an
+effect! See how to refactor our action:</p>
+<pre><code class="language-ocaml">let lift f = {
+  deps = Deps.neutral;
+  task = (fun x -&gt; Effect.return (f x))
+}
+let process_markdown = lift Markdown.to_html
+let roaring = lift String.uppercase_ascii
+</code></pre>
+<p>As I have a lot of humor, I added <code>roaring</code> which allows to <strong>ROAR a text</strong>
+(transform its content into uppercase). But hey, okay, we can create actions,
+but don't you notice a little problem? How to connect <code>read_file</code> with<code> process_markdown</code>?
+Right now ... we can't really ... AHAHA.</p>
+<h3>Compose our actions together</h3>
+<p>You can proudly create actions but you can't connect them... that's sad! Let's
+see how to solve this very difficult problem. Let's proceed step by step!
+Composing the dependencies is pretty straightforward... and yes, <strong>I insisted
+like a moron that the dependencies form a monoid</strong>, so their composition is
+already present in their API: <code>Deps.combine deps_a deps_b</code>. Concerning the
+composition of the tasks, it is a bit more boring... what we would like is a
+function like this: <code>('b -&gt; 'c Effect.t) -&gt; ('a -&gt; 'b Effect.t) -&gt; 'a -&gt; 'c Effect.t</code>.
+We should be able to get away with something like this:</p>
+<pre><code class="language-ocaml">let compose a b =
+  let open Effect in
+  let deps = Deps.combine a.deps b.deps in
+  let task x =
+    let* f = b.task x in
+    a.task f
+  in
+  { deps; task }
+</code></pre>
+<p>Ok, it works... but ... does the signature of the composition of the tasks
+remind you of something? Ahah excellent, indeed, the signature corresponds
+exactly to the <strong>composition of Kleisli</strong>! So rather than bother with complex
+considerations and unintuitive use of <code>bind</code>, let's use <code>&lt;=&lt;</code>!</p>
+<pre><code class="language-ocaml">let compose a b =
+  let open Effect in
+  let deps = Deps.combine a.deps b.deps in
+  let task = a.task &lt;=&lt; b.task in
+  { deps; task }
+</code></pre>
+<p>This is very cool, and what a coincidence, the <strong>Kleisli composition</strong> allows us
+to compose <strong>Kleisli arrows</strong> (yes, <code>'a -&gt; 'b Effect.t</code> is a <a href="https://ncatlab.org/nlab/show/Kleisli+category">Klesli
+arrow</a>). Great, now we have a
+very unpleasant way to compose several actions!</p>
+<pre><code class="language-ocaml">let rule =
+  create_file
+    &quot;my_page.html&quot;
+    (compose (read_file &quot;my_page.markdown&quot;) process_markdown)
+</code></pre>
+<p>When you only compose two actions, the boring aspect of the function is not felt
+too much, but as soon as you decide to compose more actions... <strong>the pain is felt</strong>,
+<strong>like when you dip your lips in a too hot tea</strong>.</p>
+<pre><code class="language-ocaml">let rule =
+  create_file
+    &quot;my_page.html&quot;
+    (compose
+       (read_file &quot;my_page.markdown&quot;)
+       (compose
+          process_markdown
+          (compose
+             roaring
+             (compose
+                roaring
+                (compose roaring
+                   (compose roaring
+                      (compose roaring roaring)))))))
+</code></pre>
+<p>Yes, I know... I'm abusing, I'm shamefully taking advantage of the fact that the
+extraordinary <code>roaring</code> is idempotent to propose a not very credible example of
+what I call the <strong>compose-hell</strong>! and I'm a schemer at heart, so my tolerance to
+docked brackets should be battle tested! Fortunately, in the same way that
+JavaScript escaped from the Callback-hell using the <code>then</code> method, we'll be able
+to get away with defining ... <strong>an operator</strong>!</p>
+<pre><code class="language-ocaml">let ( &gt;&gt;&gt; ) = compose
+
+let rule =
+  create_file
+    &quot;my_page.html&quot;
+    (read_file &quot;my_page.markdown&quot;
+    &gt;&gt;&gt; process_markdown
+    &gt;&gt;&gt; roaring
+    &gt;&gt;&gt; roaring
+    &gt;&gt;&gt; roaring
+    &gt;&gt;&gt; roaring)
+</code></pre>
+<p>The stairway to hell has been fixed with an operator and it is interesting to
+see that we are faced with a kind of composition of <em>things that look like
+functions</em>. However, not all our problems are solved. Indeed, as <strong>the function
+that produces the action to be executed is buried in a type</strong>, interacting with
+it is complicated. And so how to facilitate interactions between actions?
+<em>Muehehe</em> nothing easier, <strong>just add combinators and operators</strong>! Fortunately,
+there is an abstraction that captures the derivation of these combinators and
+operators!</p>
+<h3>Enter the Arrow</h3>
+<p>To simplify interactions with actions (our famous <code>('a, 'b) t</code> type), it is
+necessary to construct complementary operators and combinators. Fortunately,
+much of the work has already been done in the previous section! As for monads
+(or applicatives), <strong>it is enough to implement minimal functions to derive a
+succession of useful combinators</strong>! In fact, our <code>compose</code> function, backed by
+an <code>id</code> value (of type <code>('a, 'a) t</code>) is captured by an abstraction called
+<a href="https://ocaml-preface.github.io/preface/Preface_specs/Category/index.html"><code>Category</code></a>
+and which provides all the composition operators. As we have already implemented
+<code>compose</code>, all that remains is to implement <code>id</code>, and its implementation is easy
+to guess. We want to use the two neutral elements of the two monoids that
+characterise an action (and yes, <code>task</code> is a monad which is ... <em>a monoid in the
+category of endofunctors... what's the problem</em>):</p>
+<pre><code class="language-ocaml">  module Category = Make.Category.Via_id_and_compose (struct
+    type nonrec ('a, 'b) t = ('a, 'b) t
+
+    let id = { deps = Deps.neutral; task = Effect.return }
+
+    let compose a b =
+      let deps = Deps.combine a.deps b.deps in
+      let task = Effect.(a.task &lt;=&lt; b.task) in
+      { deps; task }
+  end)
+</code></pre>
+<p>We don't gain much compared to what we already had, it's just that we leave the
+generation of operators to Preface. The only concrete gain we have is the <code>&lt;&lt;&lt;</code>
+operator, which is the reverse version of <code>&gt;&gt;&gt;</code>. The only real point of
+describing <code>Category</code> is that it is needed to build
+<a href="https://ocaml-preface.github.io/preface/Preface_specs/Arrow/index.html"><code>Arrow</code></a>,
+which builds on top of <code>Category</code>. There are several ways to describe <code>Arrow</code>
+but the one we are going to use requires, in addition to <code>Category</code>, an <code>arrow</code>
+function which is in fact exactly the <code>lift</code> function we implemented earlier and
+which lifts an arbitrary function into an arrow and a <code>fst</code> function. The <code>fst</code>
+function may seem a bit strange at first (and we'll describe it in more detail
+later), but its purpose is to transform a <code>('a, 'b) t</code> value into <code>('a * 'c, 'b * 'c) t</code>.
+<strong>It transforms the input of the function into a pair, applies the
+task to the first element of the pair and returns the application of the task
+coupled with the second element of the input pair which will not have changed</strong>.
+Although at first glance this function may seem completely useless, we will see
+that it is in fact very practical!</p>
+<p>Here is an implementation of <code>Arrow</code> for our actions. In addition to building
+the <code>Arrow</code> module, I have included it in the rules module so that the
+combinators are present in the module's toplevel. I did not do this for
+<code>Category</code> as its combinators are included in <code>Arrow</code>:</p>
+<pre><code class="language-ocaml">module Arrow =
+    Make.Arrow.Over_category_and_via_arrow_and_fst
+      (Category)
+      (struct
+        type nonrec ('a, 'b) t = ('a, 'b) t
+
+        let arrow f =
+          { deps = Deps.neutral;
+            task = (fun x -&gt; Effect.return (f x)) }
+
+        let fst a =
+          let open Effect in
+          { deps = a.deps
+          ; task = (fun (x, y) -&gt; let+ r = a.task x in  r, y)
+          }
+      end)
+
+include (Arrow : Preface.Specs.ARROW
+    with type ('a, 'b) t := ('a, 'b) t)
+</code></pre>
+<p>And... it was here that the Romans clashed... <code>Arrow</code> provides a plethora of
+combinators/operators. To understand their interest, I will try to explain them in
+as much detail as possible! <em>Stay tuned</em>.</p>
+<blockquote>
+<h4>Small note about Category, Strong profunctor and Arrow</h4>
+</blockquote>
+<blockquote>
+<p>An Arrow can be described somewhat pompously as a <strong>monoid</strong> (another one!)
+<strong>in the category of strong endoprofunctor</strong>. One could roughly rephrase this
+statement by saying that to have the full API of an Arrow, one would just have
+to add to a <a href="https://ocaml-preface.github.io/preface/Preface_specs/Strong/index.html">Strong
+Profunctor</a>
+(present in Preface) a monoidal form. Here, Category. So there is no need to
+build Arrow, just provide Category and, on the same type, a Strong Profunctor.
+Moreover Preface <a href="https://ocaml-preface.github.io/preface/Preface_make/Arrow/From_strong_and_category/index.html">provides a way to build an
+Arrow</a>
+over Category and a Strong Profunctor. So why did we bother implementing Arrow
+which requires implementing more combinators (<code>arrow</code> and <code>fst</code>) when we can
+just implement <code>dimap</code>? This is a question I asked the Preface developers when
+they jointly added a hierarchy of arrows and profunctors. The answer can be
+divided into two distinct areas. Why in Haskell both hierarchies exist (and
+the answer itself breaks down into two distinct reasons) and why Preface
+(which is an OCaml library) seems to have consciously duplicated these closely
+related hierarchies.</p>
+</blockquote>
+<blockquote>
+<p>In the case of Haskell, this is essentially because Haskell is a forerunner in
+the exploitation of abstraction from category theory. As a result, the
+hierarchy is not always fully stabilised. When arrows were introduced in
+Haskell in &quot;<a href="http://www.cse.chalmers.se/~rjmh/Papers/arrows.pdf">Generalising Monads to
+Arrows</a>&quot; (in the context
+of parser combinators, <em>what a surprise</em>), the categorical correspondences of
+arrows were not yet fixed. It was not until many years later that the
+correspondence with strong profonctions was formalised (and very nicely
+summarised in the excellent &quot;<a href="https://arxiv.org/pdf/1406.4823.pdf">Notions of Computation as
+Monoids</a>&quot;). In addition, as for monads
+and application functors, arrows have a dedicated syntax: <a href="https://www.staff.city.ac.uk/~ross/papers/notation.pdf">The Arrow
+Notation</a>, explicitly
+implementing the different classes related to the arrows thus allows to
+benefit from a syntax &quot;<em>probably more pleasant to read</em>&quot;. Hence the current
+interest in the concrete existence of the different arrow classes.</p>
+</blockquote>
+<blockquote>
+<p>In the case of Preface, the very reasonable reason given was essentially that
+OCaml's lack of support (<a href="https://arxiv.org/pdf/1512.01895.pdf">currently</a>)
+for adhoc polymorphism means that in order to describe values of a type that
+is both a Strong Profunctor and a Category, there needs to be a functor (<em>à la
+ML</em>) that unifies Strong and Category, which needs to have a name... and Arrow
+seemed an appropriate choice.</p>
+</blockquote>
+<blockquote>
+<p>The final question one might ask is why did I choose to implement Arrow rather
+than Strong (and then derive Arrow from Category and Strong)? Mainly because
+we had already implemented <code>lift</code> (which is <code>arrow</code>) and I found that
+implementing <code>fst</code> is more trivial than implementing <code>dimap</code> and that <code>fst</code>
+is, in use, more useful than <code>dimap</code> in the case of defining pipelines for
+generating static files.</p>
+</blockquote>
+<blockquote>
+<p>After this little digression, let's have a look at some combinators to
+understand how to use them.</p>
+</blockquote>
+<h3>Arrow (and Category) functions</h3>
+<p>As mentioned earlier, our <code>('a, 'b) t</code> type is a kind of function. However,
+since the function that corresponds to the action that needs to be performed is
+buried in a record, composing it and interacting with it is a bit complicated,
+plus we have to keep in mind to capture the dependencies intelligently every
+time. Fortunately, we have derived a set of utility functions so that we don't
+have to worry about these details, but since in the type <code>('a, 'b) t</code>, <code>a</code> is in
+<strong>contravariant</strong> position and <code>b</code> is in <strong>covariant</strong> position, understanding
+the type signatures of the combinators derived by Arrow's generation can be
+tricky. So I propose to go through them one by one and understand their
+respective usefulness.</p>
+<h4><code>&gt;&gt;&gt;</code> (a.k.a compose)</h4>
+<p>We have already observed that <code>&gt;&gt;&gt;</code> corresponds to the composition of Arrows.
+Suppose I have two arrows: <code>f</code> and <code>g</code>, of type <code>('a, 'b) t</code> and <code>('b, 'c) t</code>
+respectively, then <code>f &gt;&gt;&gt; g</code> produces a new arrow of type <code>('a, 'c) t</code>. <strong>This
+is function composition (from left to right) generalized to arrows</strong>.
+Concretely, the composition of arrow, in our context, will create a new arrow
+with as dependency, the union of <code>f</code> and <code>g</code> and the composition of kleisli of
+the task of <code>f</code> and the task of <code>g</code>.</p>
+<p><img src="/images/arrow-compose.png" alt="arrow compose" /></p>
+<p>If we reduced our arrows to functions, ignoring dependencies and effect, which
+is convenient because functions are also arrows (<code>type ('a, 'b) t = ('a -&gt; 'b)</code>), <code>&gt;&gt;&gt;</code>
+could be verbosely written in this way:</p>
+<pre><code class="language-ocaml">let (&gt;&gt;&gt;) f g = fun x -&gt;
+   let y = f x in
+   g y
+</code></pre>
+<p>The cool thing is that we had to code the operator by hand, to provide
+<code>Category</code>, and this is probably the most useful operator, it will allow
+sequencing each operation. To use the example in pseudocode we gave:</p>
+<pre><code class="language-ocaml">let create_article file =
+  let content = read_file file in
+  Markdown.from_text content in
+  |&gt; inject_into &quot;templates/article.tpl.html&quot;
+  |&gt; inject_into &quot;templates/layout.tpl.html&quot;
+  |&gt; write_file ~into:&quot;articles/&quot; (change_extension file &quot;html&quot;)
+</code></pre>
+<p>Assuming that each operation (<code>read_file</code>, <code>Markdown.from_text</code> and
+<code>inject_into</code>) has an arrow, we don't need <code>write_file</code> because we had already
+defined the <code>create_file</code> function, it could be reformulated as follows:</p>
+<pre><code class="language-ocaml">val read_file : filepath -&gt; (unit, string) t
+val process_markdown : (string, string) t
+val inject_into : filepath -&gt; (string, string) t
+
+let create_article file =
+  let target = Filename.concat &quot;articles&quot; (change_extension file &quot;html&quot;) in
+  create_file target (
+    read_file file
+    &gt;&gt;&gt; process_markdown
+    &gt;&gt;&gt; inject_into &quot;templates/articles.tpl.html&quot;
+    &gt;&gt;&gt; inject_into &quot;templates/layout.tpl.html&quot;
+  )
+</code></pre>
+<p>We have seen that compose takes two arrows, and like any composition operator,
+there is its flipped version: <code>f &lt;&lt;&lt; g = g &gt;&gt;&gt; f</code> however, I have found fewer
+use cases, I find the order of execution unnatural.</p>
+<p>The composition <strong>composes two arrows</strong>, but we have seen that <code>arrow</code> can
+promote a unary function to arrow, so there are combinators that shorten the
+composition of arrow with regular functions:</p>
+<ul>
+<li><code>f &gt;&gt;^ g</code> = <code>f &gt;&gt;&gt; (arrow g)</code>
+</li>
+<li><code>f ^&gt;&gt; g</code> = <code>(arrow f) &gt;&gt;&gt; g</code>
+</li>
+</ul>
+<p>Which, assuming our <code>Markdown.from_text</code> function is a <code>string -&gt; string</code>
+function, we could rewrite our previous example like this:</p>
+<pre><code class="language-ocaml">let create_article file =
+  let target = Filename.concat &quot;articles&quot; (change_extension file &quot;html&quot;) in
+  create_file target (
+    read_file file
+    &gt;&gt;^ Markdown.from_text
+    &gt;&gt;&gt; inject_into &quot;templates/articles.tpl.html&quot;
+    &gt;&gt;&gt; inject_into &quot;templates/layout.tpl.html&quot;
+  )
+</code></pre>
+<p>And as with all composition operations, there are flipped versions which we
+won't go into because I guess you get the idea. Keep in mind <strong>that the hardest
+part of this part has been done</strong>, <code>&gt;&gt;&gt;</code> is really the core of the pipeline
+definition and the rest is just a bonus! Youhou.</p>
+<h4><code>fst</code>, producing arrows with more than one parameter</h4>
+<p>Having seen how to sequence arrows, let's now look at the second of Arrow's
+prerequisites, <code>fst</code>. In the context of <code>compose</code>, we were constructing new
+arrows by sequencing. <code>fst</code> allows us to <strong>construct a new arrow that will wait
+for two parameters (in the form of a pair) and we return a pair where the first
+element is the application of the arrow on the first element of the pair and the
+second element of the pair is unchanged</strong>:</p>
+<p><img src="/images/arrow-fst.png" alt="arrow fst" /></p>
+<p>Just as with <code>compose</code>, let's abstract away the capture of dependencies and the
+effect to see what <code>fst</code> would look like in the context of functions:</p>
+<pre><code class="language-ocaml">let fst f = fun (a, b) -&gt;
+  (f a, b)
+</code></pre>
+<p>To understand its use, let's imagine we have a <code>read_file_with_metadata</code>
+function which assumes that when we read a file, we return a <code>string * metadata option</code>
+pair. It's quite common to attach metadata to a document, and we'd like
+to be able to read the document and its metadata, so what could be more relevant
+than to return a pair with the contents of the document and its potential
+metadata? However, the problem is that our markdown arrow will no longer be
+valid because at the reading stage, we no longer return a string, but a pair
+with a string and optional metadata. We would like to be able to process the
+markdown only on the first element of the pair. Aha, that's a good thing, we
+have a combinator to do just that! (We can also assume that <code>inject_into</code> takes
+a string and metadata pair (because the metadata is probably useful for building
+the layout) and returns a pair with the injected content and propagates the
+metadata.)</p>
+<pre><code class="language-ocaml">let create_article file =
+  let target = Filename.concat &quot;articles&quot; (change_extension file &quot;html&quot;) in
+  create_file target (
+    read_file_with_metadata file
+    &gt;&gt;&gt; fst process_markdown
+    &gt;&gt;&gt; inject_into &quot;templates/articles.tpl.html&quot;
+    &gt;&gt;&gt; inject_into &quot;templates/layout.tpl.html&quot;
+    &gt;&gt;^ Stdlib.fst
+  )
+</code></pre>
+<p>The last line of our arrow (<code>&gt;&gt;^ Stdlib.fst</code>) is necessary because the
+<code>create_file</code> function takes a target and an arrow of type <code>(unit, string) t</code>.
+So once we have processed our file, we can discard its metadata. Now that we
+have seen <code>fst</code>, it is very easy to guess what the next one will be... <code>snd</code>!</p>
+<h4><code>snd</code>, producing arrows with more than one parameter (<em>bis repetita</em>)</h4>
+<p>No need to elaborate, <code>snd</code> is strictly analogous to <code>fst</code>, <strong>it just leaves the
+first parameter of the pair unchanged and applies the function to the second</strong>. In
+the same way as <code>fst</code> we go from an arrow waiting for an input to an arrow
+waiting for a pair.</p>
+<p><img src="/images/arrow-snd.png" alt="arrow snd" /></p>
+<p>As with <code>fst</code>, it is fairly easy to give the implementation in the function
+arrow (ignoring dependencies and effect) and the implementation, unsurprisingly,
+does not vary much from <code>fst</code>:</p>
+<pre><code class="language-ocaml">let snd f = fun (a, b) -&gt;
+  (a, f b)
+</code></pre>
+<p>At this point, one could imagine... a <code>fst_of_three</code> or <code>third_of_fifty</code>
+combinator (lol) but, in fact, <strong><code>fst</code> and <code>snd</code> are enough</strong>. And yes, in the
+same way that a pair allows you to describe three pieces of data: <code>(a, (b, c))</code>
+(yes, that's roughly how a list is described: <code>type 'a list = (unit, 'a list) Either.t</code>)
+you can describe three-parameter input arrows in this way: <code>('a * ('b * 'c), 'd) t</code>.
+<strong>Which brings us to the major problem of the arrows!</strong> They
+imply an infamous way of programming and encourage the use of the horrible
+&quot;point-free-style&quot; (or <a href="https://en.wikipedia.org/wiki/Tacit_programming">Tacit
+programming</a>... thanks
+<a href="https://en.wikipedia.org/wiki/APL_(programming_language)">APL</a>, a great
+language that can sometimes tend to be unreadable, a bit like Perl in fact).
+Although Tacit programming can quickly give the impression that the person who
+wrote it is brilliant, let's face it, it can quickly become unreadable.
+Fortunately, in the generation of a static blog, <strong>one rarely needs anything
+that is not sequentially describable</strong>, which generally does not involve too
+much functional witchcraft.</p>
+<p>But enough of this, let's take a quick look at two last operators, which can
+sometimes be useful.</p>
+<h4><code>***</code> (a.k.a split)</h4>
+<p>Thanks to <code>fst</code> we can produce, from an arrow that goes from <code>a</code> to <code>b</code>, a new
+arrow that goes from a pair of <code>a</code> and <code>c</code> and produces a pair of <code>b</code> and <code>c</code>,
+and thanks to <code>snd</code> we can produce, from an arrow that goes from <code>a</code> to <code>b</code>, a
+new arrow that goes from a pair of <code>c</code> and <code>a</code> and produces a pair of <code>c</code> and
+<code>b</code>, <strong>so from an arrow that goes from <code>a</code> to <code>b</code> and an arrow that goes from <code>c</code>
+to <code>d</code>, I could produce an arrow that goes from a pair of <code>a</code> and <code>c</code> to a pair
+that goes from <code>b</code> and <code>d</code></strong> in this way: <code>fst a &gt;&gt;&gt; snd b</code>. So here is <code>split</code>
+(<code>***</code>) which is a shortened form of the successive sequence of <code>fst</code> and <code>snd</code>:</p>
+<p><img src="/images/arrow-split.png" alt="arrow split" /></p>
+<p>And as with our previous operators, we can implement split for the arrow
+function, ignoring dependencies and effects, other than by using <code>fst</code> and <code>snd</code>
+(already given above):</p>
+<pre><code class="language-ocaml">let ( *** ) f g  = fun (a, b) -&gt;
+   (f a, g b)
+</code></pre>
+<p>And life is about equivalence, and we have seen that <code>split</code> can be expressed in
+terms of <code>compose</code>, <code>fst</code> and <code>snd</code>. Well, we can express <code>fst</code> and <code>snd</code> in
+terms of <code>split</code>!</p>
+<pre><code class="language-ocaml">let fst f = f *** id
+let snd f = id *** f
+</code></pre>
+<p>Here the <code>id</code> is not the identity function but the <code>id</code> defined in <code>Category</code>,
+well... in the case of arrow functions... <code>fun x -&gt; x</code> (i.e. the identity
+function) is the implementation of <code>id</code> (as <code>Category</code>).</p>
+<p>Now that we have a way to reduce the complexity of our workflows by merging
+mergeable operations, thus avoiding the need to sequence successions of <code>fst</code>,
+<code>compose</code> and <code>snd</code>, we can turn our attention to the final combinator that I
+will introduce in this article!</p>
+<h4><code>&amp;&amp;&amp;</code> (a.k.a fan-out)</h4>
+<p>Our last operator allows us to apply two arrows to two elements. Another common
+operation that could be considered would be to apply two arrows to a single
+value. <strong>So for two arrows from <code>a</code> to <code>b</code> and from <code>a</code> to <code>c</code>, produce a new
+arrow that goes from <code>a</code> to a pair of <code>b</code> and <code>c</code></strong>. Or apply two arrows to the
+same parameter simultaneously. Thinking only in terms of <code>fst</code> and <code>snd</code> we
+could imagine implementing this function like this:
+<code>(fun x -&gt; (x, x)) ^&gt;&gt; fst f &gt;&gt;&gt; snd g</code>. So here is <code>fan-out</code> (<code>&amp;&amp;&amp;</code>) which is,
+like <code>split</code> a shortened of <code>fst</code> and <code>snd</code>.</p>
+<p><img src="/images/arrow-fanout.png" alt="arrow fan-out" /></p>
+<p>Without the ceremony of dependencies and effects, the arrow function that
+corresponds to this operation is, once again, quite easy to
+reason about:</p>
+<pre><code class="language-ocaml">let (&amp;&amp;&amp;) f g = fun x -&gt;
+  (f x, g x)
+</code></pre>
+<p>Here are the operators and functions that can be used in regular arrows to build
+more complex arrows by assembly. Before drawing a conclusion of the exploitation
+of arrows, I would like to present you a small example of use.</p>
+<h3>Piping files using arrows</h3>
+<blockquote>
+<p>As I'm already up to my neck in shame, I'm stealing another example from
+<a href="http://xvw.github.io/talks/lambdalille-kotlin-arrow/support.pdf">Xavier</a> (but
+which he took directly from the YOCaml code, so my honour is &quot;a little bit
+safe&quot;)</p>
+</blockquote>
+<p>The scenario is quite simple, we would like to be able to concatenate files, for
+example, to implement this case, or concatenate the files <code>header.html</code>,
+<code>article.html</code> and <code>footer.html</code> to build the file <code>_build/article.html</code>:</p>
+<pre><code class="language-make">article.html: pages/%.html header.html footer.html
+  cat header.html article.html footer.html &gt; _build/article.html
+</code></pre>
+<p>Having already the arrow <code>read_file</code> (<code>string -&gt; (unit, string) t</code>) there is a
+tempting approach to use <code>&amp;&amp;</code>, which we have just seen!</p>
+<pre><code class="language-ocaml">let concat_files file_a file_b =
+  read_file file_a &amp;&amp;&amp; read_file file_b
+  &gt;&gt;^ (fun (content_a, content_b) -&gt; content_a ^ content_b)
+</code></pre>
+<p>If the previous sections have been well understood, this code should
+not be a problem. <code>read_file</code> is a function which returns an arrow which expects
+<code>unit</code> as an argument, so we produce a global arrow which expects <code>unit</code> which
+we pass to the arrows produced by <code>read_file file_a</code> and <code>read_file file_b</code>,
+giving us a pair of the contents of <code>file_a</code> and <code>file_b</code> and then one promotes
+a regular function which simply concatenates two strings. If you are a hipster,
+you can rephrase this implementation as <em>tacit</em> (point-free for the win) <strong>and be
+hated by your coworkers</strong> (but by feeling <em>smart</em>, which is not to be overlooked):</p>
+<pre><code class="language-ocaml">open Preface
+
+let concat_files file_a file_b =
+  read_file file_a &amp;&amp;&amp; read_file file_b
+  &gt;&gt;^ Pair.uncurry ( ^ )
+</code></pre>
+<p><em>So far so good</em> we now have a function of type <code>filepath -&gt; filepath -&gt; (unit, filecontent) t</code>.
+Cool, let's try to implement our example in <code>Make</code>:</p>
+<pre><code class="language-ocaml">concat_files &quot;header.html&quot; &quot;article.html&quot; &amp;&amp;&amp; read_file &quot;footer.html&quot;
+&gt;&gt;^ Pair.uncurry ( ^ )
+</code></pre>
+<p><strong>Damn</strong>, <em>what a mess</em>! The type of our arrow gives us an indication that
+<code>concat_files</code> is not very exploitable: <code>(unit, filecontent) t</code>. What we would like
+is something like that:</p>
+<pre><code class="language-ocaml">read_file &quot;header.html&quot;
+&gt;&gt;&gt; pipe_content &quot;article.html&quot;
+&gt;&gt;&gt; pipe_content &quot;footer.html&quot;
+</code></pre>
+<p>Type of <code>pipe_content</code> is fairly easy to infer: <code>filepath -&gt; (filecontent, filecontent) t</code>.
+As a starting point, we have the <code>read_file</code> arrow which starts
+from <code>unit</code> and returns <code>a file content</code>. So as <code>pipe_content</code> takes a file
+content and returns a file content, so we can focus on reading the file. As we
+saw earlier, we have a <code>filecontent</code>, and we would like a pair of
+<code>filecontents</code>, the second being the result of reading the file. We have a file
+content, unfortunately, <code>read_file</code> returns an arrow waiting for <code>unit</code>. One
+possible solution is:</p>
+<p><img src="/images/arrow-pipe.png" alt="arrow pipe" /></p>
+<p>At this stage, we have our couple and we can just concatenate them!</p>
+<pre><code class="language-ocaml">let pipe_content filename =
+  (fun x -&gt; x, ())
+  ^&gt;&gt; snd (read_file filename)
+  &gt;&gt;^ (fun (content_a, content_b) -&gt; content_a ^ content_b)
+</code></pre>
+<p>Unlike our first implementation, <code>pipe_content</code> is no longer restricted because
+its type is <code>filename -&gt; (filecontent, filecontent) t</code>.
+The use of <code>snd</code> reinforces the idea that new arrows are being built.</p>
+<h3>Some closing words on our Arrow</h3>
+<p>After a first glance, one could quickly say <strong>that one of the most atrocious
+ways of programming has been highlighted</strong>! Replacing all function calls with
+Arrow pipelines is a very bad idea that forces <em>tacit</em> programming. How
+horrible! On the other hand, like the operators of Applicatives and monads (and
+many others), one can <strong>add context</strong> to a computation-sequence. Browsing
+through the various Arrows operators showed us the building blocks needed to
+construct <strong>sequential pipelines</strong> to which we added dependency capture and
+(almost transparent) effect propagation. And, not covered in this article, it is
+possible to capture other pervasive idioms in a language. For example,
+<a href="https://ocaml-preface.github.io/preface/Preface_specs/Arrow_choice/index.html">conditional
+jumps</a>.</p>
+<p>The main lesson about using arrows could be summarized into three doctoral assertions:</p>
+<ul>
+<li>Arrow allows to extend some primitive construction into and unreadable block
+</li>
+<li>but it add context (and it can be useful, for example, for defining a static
+blog generator)
+</li>
+<li>having, like <a href="https://docs.idris-lang.org/en/latest/tutorial/syntax.html">in Idris</a>
+syntax extension, could be nice (<code>let operators</code> are not sufficient for arrow syntax).
+</li>
+</ul>
+<p>The usage of Arrow for a static blog generator is not new, it is even <strong>a rather
+obsolete way</strong> of doing it. <a href="https://jaspervdj.be/hakyll/">Hakyll</a>, prior to
+version 4, used dependency capture logic incredibly similar to that of YOCaml,
+funny! Hakyll decided to use a monadic construction to simplify the DSL. Since there
+is no real YOCaml-user, I will may be not facing this problem. <em>Ahah</em>.
+But it was all I want say about designing a DSL for creating generators. Joint with
+a good API, difficulties behind Arrows can be hidden. But it can be cool to
+understand what is under the hood. Let's move on the last <em>big part</em> of this too long
+article.</p>
+<h2>It is all about diversity</h2>
+<p>We have <em>proudly</em> designing, using Arrows, an almost-generic way to build generics
+(<em>modulo the expressivity of our standard library</em>) pipelines. We <strong>provide a kind
+of abstraction over effect handling (so also over the excution platform) and a kind
+of abstraction over sequential computation</strong>. But now, we will abstract over other
+things:</p>
+<ul>
+<li>the Markup language (Markdown, Org, AsciiDoc, etc.)
+</li>
+<li>the Metadata language (<a href="https://github.com/avsm/ocaml-yaml">Yaml</a>,
+S-Expression, Toml, Ini, etc.)
+</li>
+<li>the Template Engine (like
+<a href="https://github.com/rgrinberg/ocaml-mustache">Mustache</a>)
+</li>
+</ul>
+<p>Abstracting over the markup language is not very complicated... it just a
+function from <code>string</code> (our <code>filecontent</code>) to <code>filecontent Try.t</code> (<code>Try.t</code> is a
+biased version of <code>('a, 'b) result</code>, where all potentials errors are known). But
+abstracting over metadata and template engine is more complicated and pretty
+orthogonal. So here is a naive implementation (mainly written by
+<a href="https://github.com/gr-im">Pierre</a>) that is a <em>almost smart usage</em> of <strong>visitor
+pattern</strong> (as an aspirant Java Champion, I had to use almost one Design Pattern)
+, <strong>existential types, applicative validation and boilerplate</strong>. Let's imagine
+this flow:</p>
+<p><img src="/images/yocaml-tpl-flow.png" alt="Tpl flow" /></p>
+<p>Our <code>a.md</code> file looks like this:</p>
+<pre><code class="language-markdown">---
+title: I'm an article
+date: 2021-11-12
+author: The XHTMLBoy
+---
+
+Hello, **this is a first article in Markdown**.
+</code></pre>
+<p>I want, after reading, to have a pair of <code>strings</code>, the first element is the
+text between the <code>---</code> and the second is the text after the second <code>---</code>. For
+the content (the second element) I can just apply a function that transforms the
+markdown into HTML and it's done. But for the metadata (the first element of the
+pair) I have to do:</p>
+<ul>
+<li>Transform the text into Yaml (or other meta format I have chosen)
+</li>
+<li>validate the Yaml data to project it into a concrete OCaml type, here it might
+be: <code>type article_meta = {title: string; date: Date.t; author: string option}</code>.
+</li>
+<li>Once our data are in the right type (and validated) we have to project it in a
+format understandable by the template engine
+</li>
+<li>Then we can finally inject them into the templates at the same time as the
+content.
+</li>
+</ul>
+<p>At this level, we quickly realise that the Markup language has little influence
+on the overall flow but that the template engine and metadata format impose
+anchor points for abstraction. (Hence the need for an intermediate type. One can
+only worry about having a function of <code>MyMetaLanguage.t -&gt; my_metadata</code> and
+having <code>my_metadata -&gt; MyTemplateEngineMetaData.t</code> to be able to connect the
+metadata to the template... <strong>through the magic of transitivity</strong>).</p>
+<p>However, before going from our metaformat to our type which describes our
+metadata, we need to be able to transform a string into our format (for example
+Yaml). Ie: a module of this type:</p>
+<pre><code class="language-ocaml">module type READABLE = sig
+  type t
+  val from_string : string -&gt; t Validate.t
+end
+</code></pre>
+<p>Now we need to describe <strong>format-agnostic</strong> validators.</p>
+<h3>Metadata Validation à La Carte using Applicative functors and Visitor Pattern</h3>
+<p>The fact that we would like to use the <code>Validation</code> applicative is quite
+obvious, we want <strong>to collect all the errors in the metadata and not have to run
+the generator X times to catch X errors</strong>. So we know we'll be using
+<code>Validation</code>, which is fairly well documented in <a href="https://github.com/xvw/preface/blob/master/guides/error_handling.md#parallel-validation">this
+guide</a>.
+But if I decide to use TOML instead of YAML, I have to rewrite all of my
+metadata, ok, but it would be a shame if I had to rewrite my validation
+functions. <em>No problemo</em>, <strong>let's abstract over the notion of key-value!</strong> <em>So
+far so good</em> let's read the pattern bible again: <a href="https://en.wikipedia.org/wiki/Design_Patterns"><strong>Design Patterns: Elements
+of Reusable Object-Oriented
+Software</strong></a>.</p>
+<p>Our goal is to describe what the components of a key-value representation are
+(which could, for example, at least represent JSON). And provide a fold function
+for each case. This gives us a rather naive version of the visitor! For YOCaml,
+we assumed that elements describing key-value structures could be <code>integers</code>,
+<code>floats</code>, <code>booleans</code>, <code>strings</code>, <code>null</code> values (because ... JSON), <code>lists</code> or
+<code>objects</code>.</p>
+<pre><code class="language-ocaml">type ('a, 'b, 'c) visitor = ('b -&gt; 'c) -&gt; (unit -&gt; 'c) -&gt; 'a -&gt; 'c
+
+module type VALIDABLE = sig
+  type t
+
+  val as_object : (t, (string * t) list, 'a) visitor
+  val as_list : (t, t list, 'a) visitor
+  val as_string : (t, string, 'a) visitor
+  val as_boolean : (t, bool, 'a) visitor
+  val as_integer : (t, int, 'a) visitor
+  val as_float : (t, float, 'a) visitor
+  val as_null : (t, unit, 'a) visitor
+end
+</code></pre>
+<p>Our visitor type, ie: <code>as_integer f g obj</code>, can be read as: if <code>obj</code> is readable
+as an integer, extract the integer in <code>x</code> and apply <code>f x</code>, otherwise, apply <code>g ()</code>.
+With the <code>VALIDABLE</code> interface you can generate <code>validators</code>. Here is the
+API of what I guess as sufficient for validating complex metadata. Firstly,
+simple validators are described. Visitors that simply wait for a value of the
+correct form.</p>
+<pre><code class="language-ocaml">type t
+
+val object_ : t -&gt; (string * t) list Validate.t
+val list : t -&gt; t list Validate.t
+val string : t -&gt; string Validate.t
+val boolean : t -&gt; bool Validate.t
+val integer : t -&gt; int Validate.t
+val float : t -&gt; float Validate.t
+val text : t -&gt; string Validate.t
+val null : t -&gt; unit Validate.t
+</code></pre>
+<p>Then, we can describe visitors that validate the correct form and then apply an
+additional validator (for example, to force a string to have a minimum number of
+characters, or to constrain the number of elements in a list):</p>
+<pre><code class="language-ocaml">val object_and : ((string * t) list -&gt; 'a Validate.t) -&gt; t -&gt; 'a Validate.t
+val list_and : (t list -&gt; 'a Validate.t) -&gt; t -&gt; 'a Validate.t
+val list_of : (t -&gt; 'a Validate.t) -&gt; t -&gt; 'a list Validate.t
+val string_and : (string -&gt; 'a Validate.t) -&gt; t -&gt; 'a Validate.t
+val boolean_and : (bool -&gt; 'a Validate.t) -&gt; t -&gt; 'a Validate.t
+val integer_and : (int -&gt; 'a Validate.t) -&gt; t -&gt; 'a Validate.t
+val float_and : (float -&gt; 'a Validate.t) -&gt; t -&gt; 'a Validate.t
+val null_and : (unit -&gt; 'a Validate.t) -&gt; t -&gt; 'a Validate.t
+</code></pre>
+<p>Now we can deal with the objects, by processing their fields:</p>
+<pre><code class="language-ocaml">val optional_field
+    :  ?case_sensitive:bool
+    -&gt; (t -&gt; 'a Validate.t)
+    -&gt; string
+    -&gt; t
+    -&gt; 'a option Validate.t
+
+  val optional_field_or
+    :  ?case_sensitive:bool
+    -&gt; default:'a
+    -&gt; (t -&gt; 'a Validate.t)
+    -&gt; string
+    -&gt; t
+    -&gt; 'a Validate.t
+
+  val required_field
+    :  ?case_sensitive:bool
+    -&gt; (t -&gt; 'a Validate.t)
+    -&gt; string
+    -&gt; t
+    -&gt; 'a Validate.t
+</code></pre>
+<p>The interesting point is that, if we provide a <code>VALIDABLE</code> (i.e. the short list
+of visitors), we can describe the complex set of validations just listed. For
+example, here are some example implementations (the others are easy enough to
+guess):</p>
+<pre><code class="language-ocaml">module Make_validator (KV: VALIDABLE) = struct
+
+  let string_and additional_validator =
+    KV.as_string additional_validator (fun () -&gt;
+        Validate.error $ Error.Invalid_field &quot;String expected&quot;)
+
+  let string = string_and Validate.valid
+
+  let optional_aux kind case_sensitive validator k s =
+    Option.fold
+      ~none:(Validate.valid None)
+      ~some:(fun x -&gt; null_and (fun () -&gt; Validate.valid None) x &lt;|&gt; validator x)
+      (find_assoc ~case_sensitive k s)
+
+  let optional_field ?(case_sensitive = false) validator k s =
+    object_ s
+    &gt;&gt;= optional_aux
+      &quot;field&quot; case_sensitive (map Option.some % validator) k
+
+  let optional_field_or ?(case_sensitive = false) ~default validator k s =
+    optional_field ~case_sensitive validator k s
+    &gt;|= Option.value ~default
+
+  let required_field ?(case_sensitive = false) validator key subject =
+    optional_field ~case_sensitive validator key subject
+    &gt;&gt;= Option.fold
+          ~none:Error.(to_validate (Missing_field key))
+          ~some:Validate.valid
+end
+</code></pre>
+<p>Yes, this code may seem complicated, but the big advantage is that it is totally
+hidden to the user! Let's say I want to build a validator for Yaml, here is the
+<a href="http://anil-code.recoil.org/ocaml-yaml/yaml/Yaml/index.html#types">representation of
+Yaml</a> in its
+OCaml library:</p>
+<pre><code class="language-ocaml">type value = [
+| `Null
+| `Bool of bool
+| `Float of float
+| `String of string
+| `A of value list
+| `O of (string * value) list
+]
+</code></pre>
+<p>It is incredibly easy to describe a validator! Well, I grant you that it is a
+bit boring, but at least the lack of difficulty gives credit to the previous
+code!</p>
+<pre><code class="language-ocaml">module Yaml_validator = Make_validator (struct
+  type t =
+    [ `Null
+    | `Bool of bool
+    | `Float of float
+    | `String of string
+    | `A of t list
+    | `O of (string * t) list
+    ]
+
+  let as_object valid invalid = function
+    | `O kv -&gt; valid kv
+    | _ -&gt; invalid ()
+
+  let as_list valid invalid = function
+    | `A v -&gt; valid v
+    | _ -&gt; invalid ()
+
+  let as_string valid invalid = function
+    | `String s -&gt; valid s
+    | _ -&gt; invalid ()
+
+  (* etc. *)
+
+  let as_null valid invalid = function
+    | `Null -&gt; valid ()
+    | _ -&gt; invalid ()
+end)
+
+</code></pre>
+<p>We have proceeded in exactly the same way as in the previous sections. We
+describe some boring code &quot;<em>as a library producer</em>&quot; to make it easier for the
+user to use &quot;<em>the library as a consumer</em>&quot;. To move on to the next step, we need
+a first ingredient: a function that separates the content of a document from its
+metadata: <code>filecontent -&gt; (string option * filecontent)</code>, this function is not
+very interesting but it will extract the bounded content in the <code>---</code> and the
+content after the metadata description. The metadata is described as potentially
+absent (hence the option) because it is conceivable that a document has no
+metadata.</p>
+<p>Now we can extend our <code>READABLE</code> module by saying that <code>READABLE</code> data is also
+validatable by injecting a <code>VALIDATOR</code>:</p>
+<pre><code class="language-ocaml">module type READABLE = sig
+  type t
+  include VALIDATOR with type t := t
+  val from_string : string -&gt; t Validate.t
+end
+</code></pre>
+<p>The <code>READABLE</code> module is able to transform a string into our metaformat and
+provides a minimal validation API. Now we need to be able to actually define a
+validation scheme for data. We can add a new module which will project our
+metaformat into a metadata type using the <code>READABLE</code> combinators to provide
+validation:</p>
+<pre><code class="language-ocaml">module type PROJECTABLE = sig
+  type t
+  val from_string : (module READABLE) -&gt; string option -&gt; t Validate.t
+end
+</code></pre>
+<p>The purpose of this <code>from_string</code> function is to start with our metadata option
+and use an <code>READABLE</code> module given as an argument to validate the data and
+concretise our metaformat into metadata. For example, let's implement the
+metadata of an article as shown in our example:</p>
+<pre><code class="language-ocaml">module Article = struct
+  type t = {
+    title: string
+  ; date: Date.t
+  ; author: string option
+  }
+
+  let make_metadata title date author =
+    {title; date; author}
+
+  let from_string (module R: READABLE) = function
+    | None -&gt; Validate.error (Error.Required_metadata [ &quot;Article&quot; ])
+    | Some str -&gt;
+      R.from_string str &gt;&gt;= R.object_and (fun obj -&gt;
+        make_metadata
+        &lt;$&gt; R.(required_field string) &quot;title&quot; obj
+        &lt;*&gt; R.(required_field Date.validator) &quot;date&quot; obj
+        &lt;*&gt; R.(optional_field string) &quot;author&quot; obj
+end
+</code></pre>
+<p>If you are not familiar with <strong>applicative validation</strong>, I invite you to re-read
+the <a href="https://github.com/xvw/preface/blob/master/guides/error_handling.md#parallel-validation">Preface
+guide</a>.
+The good thing is that thanks to our visitor-derived validation, we can write
+validation schemes that don't care about the metaformat. For example, ensuring
+that a string is an email address, or that a list is non-empty. The use of
+<code>Date.validator</code> (the implementation of which is not given) indicates that we
+can correctly compose our validators. All for the best!</p>
+<p>Now let's package everything in an arrow to facilitate the use of our
+reader/validator on demand:</p>
+<pre><code class="language-ocaml">let read_file_with_metadata
+    (type a) (module R: READABLE) (module P: PROJECTABLE) filepath =
+    read_file filepath
+    &gt;&gt;^ split_metadata
+    &gt;&gt;&gt; fst (arrow (P.from_string (module R)))
+    &gt;&gt;&gt; (lift_task (function
+          | Valid x -&gt; Effect.return x
+          | Invalid x -&gt; Effect.throw (Error.of_list x)))
+
+</code></pre>
+<p><code>lift_task</code> has type <code>('a -&gt; 'b Effect.t) -&gt; ('a, 'b) t</code>. This is a bit like
+<code>arrow</code> except that the function returns an effect. The type of our
+<code>read_file_with_metadata</code> arrow is :</p>
+<pre><code class="language-ocaml">val read_file_with_metadata
+  :  (module READABLE)
+  -&gt; (module PROJECTABLE with type t = 'a)
+  -&gt; filepath
+  -&gt; (unit, 'a * string) t
+</code></pre>
+<p>After running our arrow, we have a pair with our <strong>correctly parsed metadata</strong>
+as the first element and the content of our document unchanged as the second.
+The interesting thing about this approach is that it makes <code>Article</code> (the
+description of our metadata) completely format-agnostic. Everything is
+abstracted using the READABLE module. We could simplify our code by providing,
+in the modules that describe our metaformat, for example in <code>Yocaml_yaml</code> an
+arrow that avoids having to give two modules (we suppose that <code>Readable</code> is
+defined in <code>Yocaml_yaml</code> and contains the <code>Yaml_validator</code> we defined earlier
+and the function <code>from_string</code>, <em>of course</em>):</p>
+<pre><code class="language-ocaml">let read_file_with_metadata
+    (type a) (module P : Yocaml.PROJECTABLE with type t = a) filepath
+  = Yocaml.read_file_with_metadata (module Readable) (module P) path
+</code></pre>
+<p>Great, we have the <strong>generic projection</strong> (i.e. reading text data, and
+validating it) defined. Now to deal with the various template engines, we would
+need the <strong>generic injection</strong>, which is the transformation into a format
+interpretable by a template engine.</p>
+<h3>Metadata injection à La Carte, without any fancy trick</h3>
+<p>As most of the work has been done before, one must sadly note that the injection
+is super easy and <strong>does not rely on any complicated Java Champion
+techniques</strong>... We only have to provide the opposite of our visitors. Instead of
+&quot;visiting cases&quot;, <strong>we provide combinators to produce cases</strong>.</p>
+<pre><code class="language-ocaml">module type DESCRIBABLE = sig
+  type t
+
+  val object_ : (string * t) list -&gt; t
+  val list : t list -&gt; t
+  val string : string -&gt; t
+  val boolean : bool -&gt; t
+  val integer : int -&gt; t
+  val float : float -&gt; t
+  val null : t
+end
+</code></pre>
+<p>And, for example, for Yaml, you can provide a descriptor very simply by reusing
+the type of <code>Yaml_validator</code>:</p>
+<pre><code class="language-ocaml">module Yaml_descriptor = struct
+  type t = Yaml_validator.t
+
+  let object_ list = `O list
+  let list list = `A list
+  let string str = `String str
+  let boolean b = `Bool b
+  let integer i = `Float (float_of_int i)
+  let float f = `Float f
+  let null = `Null
+end
+</code></pre>
+<p>Now, as we have described what readable metadata is. We need to describe what is
+injectable metadata. Nothing could be simpler! Instead of having <code>from_string</code>
+we need a <code>inject</code> function. That function will take a <code>t</code> describes it as
+a list of key attached to values <code>DESCRIBABLE</code>.</p>
+<pre><code class="language-ocaml">module type INJECTABLE = sig
+  type t
+  val inject :
+    (module DESCRIBABLE with type t = 'a) -&gt; t -&gt; (string * 'a) list
+end
+</code></pre>
+<p>We can easily improve our <code>Article</code> module to describe the metadata :</p>
+<pre><code class="language-ocaml">module Article = struct
+  type t = {
+    title: string
+  ; date: Date.t
+  ; author: string option
+  }
+
+  let make_metadata title date author =
+    {title; date; author}
+
+  let from_string (module R: READABLE) = function
+    | None -&gt; Validate.error (Error.Required_metadata [ &quot;Article&quot; ])
+    | Some str -&gt;
+      R.from_string str &gt;&gt;= R.object_and (fun obj -&gt;
+        make_metadata
+        &lt;$&gt; R.(required_field string) &quot;title&quot; obj
+        &lt;*&gt; R.(required_field Date.validator) &quot;date&quot; obj
+        &lt;*&gt; R.(optional_field string) &quot;author&quot; obj
+
+  let inject
+    (type a) (module D: DESCRIBABLE with type t = a) {title; date; author} =
+    [ &quot;title&quot;, D.string title
+    ; &quot;date&quot;, D.object_ (Date.inject (module D) date)
+    ; &quot;author&quot;, Option.fold ~none:D.null ~some:D.string author ]
+end
+</code></pre>
+<p>By <strong>structural subtyping, which applies to modules</strong>, <code>Article</code> can be
+interpreted as a <code>PROJECTABLE</code> and a <code>INJECTABLE</code>! And as before, for
+<code>READABLE</code>, we would like to be able to project our injectable data into the
+format of our template engine, so we can add a <code>RENDERABLE</code> module whose purpose
+is to inject our data into a template engine:</p>
+<pre><code class="language-ocaml">module type RENDERABLE = sig
+  type t
+  include DESCRIBABLE with type t := t
+  val to_string : (string * t) list -&gt; filecontent -&gt; filecontent
+end
+</code></pre>
+<p>Let's package everything in an arrow!</p>
+<pre><code class="language-ocaml">let apply_as_template
+  (type a) (module I: INJECTABLE) (module R: RENDERABLE) template_file =
+  let action ((meta, content), tpl_content) =
+    let data = I.inject (module R) meta in
+    let variables = (&quot;body&quot;, R.string content) :: values in
+    R.to_string variables tpl_content
+  (fun x -&gt; x, ())
+  ^&gt;&gt; snd (read_file template_file)
+  &gt;&gt;^ action
+</code></pre>
+<p>The first observation is that we use the same trick as for <code>piped_content</code> <strong>to
+avoid locking up our arrow and make it composable</strong> (i.e. applying
+<code>apply_as_template</code> several times to get a hierarchy of templates. The second
+observation is that <strong>the content of the file is added as data to be injected
+into the template</strong> to allow the user to arbitrarily choose where to inject the
+content. The type of our <code>apply_as_template</code> arrow is :</p>
+<pre><code class="language-ocaml">val apply_as_template
+  :  (INJECTABLE with type t = 'a)
+  -&gt; (RENDERABLE)
+  -&gt; filepath
+  -&gt; ('a * string, 'a * string) t
+</code></pre>
+<p>For a pair of (injectable) metadata and file content, it returns the unchanged
+metadata and the modified file content (injected into the template). As for
+reading metadata, an arrow can be described in the package of a template engine,
+for example Mustache, to reduce the number of modules to provide (we suppose that <code>Renderable</code> is
+defined in <code>Yocaml_mustache</code> and contains the <code>Yaml_descriptor</code> we defined earlier
+and the function <code>to_string</code>, <em>of course</em>):</p>
+<pre><code class="language-ocaml">let apply_as_template
+    (type a) (module I : Yocaml.INJECTABLE with type t = a) template
+  = Yocaml.apply_as_template (module I) (module Renderable) template
+</code></pre>
+<p>That's it! We can now propose a task that creates articles by correctly
+extracting the metadata and correctly injecting it into a template!</p>
+<pre><code class="language-ocaml">module Metadata = Yocaml_yaml
+module Template = Yocaml_mustache
+
+let create_article file =
+  let target = Filename.concat &quot;articles&quot; (change_extension file &quot;html&quot;) in
+  create_file target (
+    Metadata.read_file_with_metadata (module Article) file
+    &gt;&gt;&gt; snd Markdown.to_html
+    &gt;&gt;&gt; Template.apply_as_template (module Article) &quot;templates/article.html&quot;
+    &gt;&gt;^ Stdlib.snd
+  )
+</code></pre>
+<p>The symmetry between reading data and injecting it into a template is fun, and
+now we have a generic approach to building static, relatively configurable page
+generators. <strong>We can finally conclude</strong>!</p>
+<h2>The belated conclusion</h2>
+<p>In this article, we have briefly seen some of the details of how <strong>an aspiring
+Java Champion</strong> uses a library to generate, <em>unproductively</em>, his blog, through
+three axes:</p>
+<ul>
+<li>How to abstract over effects using <strong>Freer monad</strong> and handlers (in _<em>Javaist</em> words
+&quot;<em>how to use hexagonal architecture</em> via &quot;<em>the interpreter pattern</em>&quot;)
+</li>
+<li>How to capture dependencies between tasks using <strong>Kleisli Arrow</strong> (and <code>Set</code>)
+</li>
+<li>How to deal with metadata, <em>at user level</em> (in <em>Javaist</em> words &quot;<em>how to deal
+with visitors and subtyping</em>&quot;)
+</li>
+</ul>
+<p>There are still several aspects that I haven't covered (so as not to make this
+article too long), such as <strong>how to deal with dynamic dependencies</strong>, but
+perhaps that will be the subject of a future article. To conclude, Preface is
+pretty cool to use and you can try your hand at using
+<a href="https://github.com/xhtmlboi/yocaml">YOCaml</a> (if you like OCaml). There are
+several examples that can be used as a reference:</p>
+<ul>
+<li><a href="https://github.com/xhtmlboi/yocaml/tree/main/examples">The examples folder</a>
+that is almost covered in the
+<a href="https://yocaml.github.io/doc/yocaml/index.html">tutorial</a>
+</li>
+<li><a href="https://github.com/xhtmlboi/blogger">My blog</a>
+</li>
+<li><a href="https://github.com/BastienDuplessier/angry_cuisine_nerd">Angry Cuisine Nerd</a>
+a recipe blog by <a href="https://github.com/BastienDuplessier">Zangther</a> that use
+YOCaml in an unconventional way
+</li>
+<li><a href="https://github.com/lambdalille/history">LambdaLille History</a> that tracks the
+<a href="https://github.com/lambdalille/talks">history of Lambda Lille</a> by
+<a href="https://github.com/xvw">xvw</a> that deal with dynamic deps.
+</li>
+</ul>
+<p>In addition, YOCaml <a href="https://github.com/xhtmlboi/yocaml/tree/main/lib">has several
+plugins</a>. In particular, one
+that allows you to directly generate pages in an <a href="https://irmin.io/">Irmin</a>
+storage, which can therefore be served by a <a href="https://mirage.io/">MirageOS
+unikernel</a>.</p>
+<p>It was quite different from the previous articles because it was:</p>
+<ul>
+<li>a little less technical than usual
+</li>
+<li>almost no Java (sorry)
+</li>
+<li>a bit promotional
+</li>
+</ul>
+<p>I hope you found it interesting to read and I'll see you soon for new articles!</p>
+
+    </article>
+
+        </main>
+    <footer>
+        <a href="https://github.com/xhtmlboi/yocaml">Powered by <strong>YOCaml</strong></a>
+        (snif, WordPress was definitively a better name)
+        <br />
+        <a class="valid" href="https://validator.w3.org/check?uri=https%3A%2F%2Fxhtmlboi.github.io&charset=%28detect+automatically%29&doctype=Inline&group=0">HTML5</a>
+        <a class="valid" href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fxhtmlboi.github.io%2Fcss%2Fstyle.css&profile=css3svg&usermedium=all&warning=1&vextwarning=&lang=en">CSS3</a>
+    </footer>
+    <script>hljs.highlightAll();</script>
+  </body>
+</html>
