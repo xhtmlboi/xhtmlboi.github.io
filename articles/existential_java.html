@@ -1,27 +1,28 @@
-
-<!doctype html>
+ <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>
-        XHTMLBoy's website - Understanding &quot;Existential Types&quot; with Java
-    </title>
-    <meta name="description" content="An existential type (or &quot;existentially quantified type&quot;) is a complicated type system fanatic thing. But to become a Java Champion, it&apos;s a must. Let&apos;s learn how to use it, in Java, of course.">
-    <link href="/css/fonts.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/hl.css">
-    <link href="/css/style.css" rel="stylesheet">
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XHTMLBoy's website - Understanding &quot;Existential Types&quot; with Java</title>
+    <meta name="description" content="An existential type (or &quot;existentially quantified type&quot;) is a complicated type system fanatic thing. But to become a Java Champion, it&apos;s a must. Let&apos;s learn how to use it, in Java, of course." />
+    <link href="/css/fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/hl.css" />
+    <link href="/css/style.css" rel="stylesheet" />
     <script src="/js/hl.js"></script>
-    <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSSBoy">
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      href="/feed.xml"
+      title="RSSBoy"
+    />
   </head>
   <body>
     <header>
       <h1>XHTMLBoy's Website</h1>
       <blockquote>
-        You are on a website dedicated to the enthusiasts of
-        (valid) <strong>XHTML</strong>, and of <strong>beautiful
-        mechanics</strong>.
+        You are on a website dedicated to the enthusiasts of (valid)
+        <strong>XHTML</strong>, and of <strong>beautiful mechanics</strong>.
       </blockquote>
     </header>
     <main><a href="/index.html">Back to index</a>
@@ -57,7 +58,7 @@ hard.</p>
 actually <em>very easy</em>), I propose a small diversions to a very popular language in
 French research, <a href="https://ocaml.org">OCaml</a>, which allows to describe
 existentials <strong>quite easily</strong>.</p>
-<h3>OCaml diversions</h3>
+<h3 id="ocaml-diversions">OCaml diversions</h3>
 <p>OCaml is a very nice language with lots of tools for working with functions,
 algebraic types, modules and objects (even if I am far from being an expert in
 OCaml, I decided to use this language to write the <a href="https://github.com/xhtmlboi/yocaml">generator for my
@@ -106,7 +107,7 @@ end
   &lt;individual age=&quot;39&quot; name=&quot;Charlotte de Belfroid&quot;/&gt;
 &lt;/contacts&gt;
 </code></pre>
-<h4>A first approach, a direct encoding</h4>
+<h4 id="a-first-approach-a-direct-encoding">A first approach, a direct encoding</h4>
 <p>There are many ways to write the serialization strategy. The first, and most
 obvious, would be to use direct encoding, i.e. to describe each serialization
 function individually. For example :</p>
@@ -130,7 +131,7 @@ let contacts_to_xml contacts =
 ... doesn't <em>scale</em> much. Indeed, we have to keep in mind how to describe XML
 for each new element. <strong>What we want are generic combinators to build,
 generically, fragments of XML</strong>.</p>
-<h4>A widely better approach, an indirect encoding</h4>
+<h4 id="a-widely-better-approach-an-indirect-encoding">A widely better approach, an indirect encoding</h4>
 <p>Another approach would be to <strong>split</strong> the
 description of the structure of the XML and the structure of the entities being
 manipulated. For example, let's start by describing generically what an XML
@@ -184,7 +185,7 @@ that we <strong>add artificial constraints</strong> to our serialization routine
 sense of the use of existentials and that these examples be transposed to Java.
 One of these constraints could be, for example, to say that <strong>it is strictly
 forbidden to use an intermediate format</strong> because ... <em>lol</em>, I do what I want.</p>
-<h4>A cheaper approach, but one that takes advantage of existential types</h4>
+<h4 id="a-cheaper-approach-but-one-that-takes-advantage-of-existential-types">A cheaper approach, but one that takes advantage of existential types</h4>
 <p>If we want to avoid having an intermediate description (for no other reason than
 the pleasure of discovering existentials), one solution would be to compose, not
 constructors, but <em>pretty-printer functions</em>. So far so good, let's try to write
@@ -294,7 +295,7 @@ say that the <code>pack</code> function guarantees that a type <strong>exists</s
 consumed in a certain way. That's why we talk about &quot;existential types&quot;.</p>
 <p>Now that we have seen what existentials are in a very artificial example, we can
 go back to a real language, Java.</p>
-<h3>Existential types in Java</h3>
+<h3 id="existential-types-in-java">Existential types in Java</h3>
 <p>Even though Java is becoming more modern every day (which explains my obsession
 to becoming a Java <strong>champion</strong>), the language does not allow to describe
 complicated stuff like GADTs. <strong>So how can we describe existentials?</strong> (<em>What a
@@ -353,15 +354,26 @@ existential types</strong>, it's just that you call them, <em>probably different
 <p>I hope you enjoyed reading this, and see you soon for new articles!</p>
 
     </article>
-
-        </main>
+ </main>
     <footer>
-        <a href="https://github.com/xhtmlboi/yocaml">Powered by <strong>YOCaml</strong></a>
-        (snif, WordPress was definitively a better name)
-        <br />
-        <a class="valid" href="https://validator.w3.org/check?uri=https%3A%2F%2Fxhtmlboi.github.io&charset=%28detect+automatically%29&doctype=Inline&group=0">HTML5</a>
-        <a class="valid" href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fxhtmlboi.github.io%2Fcss%2Fstyle.css&profile=css3svg&usermedium=all&warning=1&vextwarning=&lang=en">CSS3</a>
+      <a href="https://github.com/xhtmlboi/yocaml"
+        >Powered by <strong>YOCaml</strong></a
+      >
+      (snif, WordPress was definitively a better name)
+      <br>
+      <a
+        class="valid"
+        href="https://validator.w3.org/check?uri=https%3A%2F%2Fxhtmlboi.github.io&charset=%28detect+automatically%29&doctype=Inline&group=0"
+        >HTML5</a
+      >
+      <a
+        class="valid"
+        href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fxhtmlboi.github.io%2Fcss%2Fstyle.css&profile=css3svg&usermedium=all&warning=1&vextwarning=&lang=en"
+        >CSS3</a
+      >
     </footer>
-    <script>hljs.highlightAll();</script>
+    <script>
+      hljs.highlightAll();
+    </script>
   </body>
 </html>

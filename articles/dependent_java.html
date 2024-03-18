@@ -1,27 +1,28 @@
-
-<!doctype html>
+ <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>
-        XHTMLBoy's website - Type-dependent instances in Java
-    </title>
-    <meta name="description" content="While studying Java (to become a real Java-Champion) I came across a feature I didn&apos;t know about, &quot;type-dependent instances&quot;. Incredible!">
-    <link href="/css/fonts.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/hl.css">
-    <link href="/css/style.css" rel="stylesheet">
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XHTMLBoy's website - Type-dependent instances in Java</title>
+    <meta name="description" content="While studying Java (to become a real Java-Champion) I came across a feature I didn&apos;t know about, &quot;type-dependent instances&quot;. Incredible!" />
+    <link href="/css/fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/hl.css" />
+    <link href="/css/style.css" rel="stylesheet" />
     <script src="/js/hl.js"></script>
-    <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSSBoy">
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      href="/feed.xml"
+      title="RSSBoy"
+    />
   </head>
   <body>
     <header>
       <h1>XHTMLBoy's Website</h1>
       <blockquote>
-        You are on a website dedicated to the enthusiasts of
-        (valid) <strong>XHTML</strong>, and of <strong>beautiful
-        mechanics</strong>.
+        You are on a website dedicated to the enthusiasts of (valid)
+        <strong>XHTML</strong>, and of <strong>beautiful mechanics</strong>.
       </blockquote>
     </header>
     <main><a href="/index.html">Back to index</a>
@@ -47,7 +48,7 @@ said, software engineers are lazy! In this article, I propose you to discover an
 article which will make you save a colossal amount of time! Please note that all
 the examples presented here are from a case that actually happened. <em>I swear on
 my mother's life</em> (lol).</p>
-<h3>A brief background of the problem</h3>
+<h3 id="a-brief-background-of-the-problem">A brief background of the problem</h3>
 <p>This part could have been called &quot;<strong>How I solved, with great intelligence, a very
 complex problem</strong>&quot;.</p>
 <blockquote>
@@ -206,7 +207,7 @@ that uses this <strong>clever approach</strong>.</p>
 }
 </code></pre>
 <p>Terrific.</p>
-<h3>When problems arise</h3>
+<h3 id="when-problems-arise">When problems arise</h3>
 <p>After putting this (micro-)service into production (in a Docker that mounts a
 JVM) many of my colleagues came to me for help in refactoring their services...
 they had to deal with <code>nullable strings</code>, <code>nullable doubles</code> etc. When you want
@@ -218,7 +219,7 @@ explode</strong>.</p>
 that allows me to save time. I called it &quot;<strong>type-dependent instances</strong>&quot;, because
 the only name I could find in the documentation was &quot;Generics&quot; (and I didn't see
 a connection with Bernard Minet, <em>a joke exclusively for French speakers</em>).</p>
-<h3>type-dependent instances</h3>
+<h3 id="type-dependent-instances">type-dependent instances</h3>
 <p>Java has a way of describing type variables in the class definition... which
 will allow this type to be fixed (monomorphised) at instance time. For example,
 we could redeclare our function <code>functionFromIntToInt</code> in this way:</p>
@@ -231,7 +232,7 @@ it) used to, for example... describe lists: <code>List&lt;A&gt;</code> where <co
 variable, but also to describe... optionality with <code>Optional&lt;A&gt;</code>. By the way,
 the ultimate form of refactoring my real-world-code would simply be to replace
 all my occurrences of <code>NullableInt</code> with <code>Optional&lt;Integer&gt;</code>. <strong>Wow</strong>.</p>
-<h3>Going further with type constraint</h3>
+<h3 id="going-further-with-type-constraint">Going further with type constraint</h3>
 <p>Incredible but the magic doesn't stop here. Indeed, it is possible to constrain
 the type of a type variable, using the syntax : <code>Class&lt;T extends S&gt;</code> which means
 the class <code>Class</code> is parameterised by a <code>T</code> <strong>which is a subtype of</strong> <code>S</code>.
@@ -241,7 +242,7 @@ class (or an interface, but it is the same thing). It is also possible to add
 several separate constraints using <code>&amp;</code>. Incredible. The documentation talks
 about &quot;<em>Multiple Bounds</em>&quot; but I also find this name unclear, so I propose to
 call it &quot;<strong>type family</strong>&quot; because all the constraints form a family.</p>
-<h3>To conclude</h3>
+<h3 id="to-conclude">To conclude</h3>
 <p>Incredibly, we have discovered a rather unknown feature of Java to facilitate
 refactoring. To summarise:</p>
 <ul>
@@ -260,15 +261,26 @@ words?</strong></p>
 <p>I hope you enjoyed reading this, and see you soon for new articles!</p>
 
     </article>
-
-        </main>
+ </main>
     <footer>
-        <a href="https://github.com/xhtmlboi/yocaml">Powered by <strong>YOCaml</strong></a>
-        (snif, WordPress was definitively a better name)
-        <br />
-        <a class="valid" href="https://validator.w3.org/check?uri=https%3A%2F%2Fxhtmlboi.github.io&charset=%28detect+automatically%29&doctype=Inline&group=0">HTML5</a>
-        <a class="valid" href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fxhtmlboi.github.io%2Fcss%2Fstyle.css&profile=css3svg&usermedium=all&warning=1&vextwarning=&lang=en">CSS3</a>
+      <a href="https://github.com/xhtmlboi/yocaml"
+        >Powered by <strong>YOCaml</strong></a
+      >
+      (snif, WordPress was definitively a better name)
+      <br>
+      <a
+        class="valid"
+        href="https://validator.w3.org/check?uri=https%3A%2F%2Fxhtmlboi.github.io&charset=%28detect+automatically%29&doctype=Inline&group=0"
+        >HTML5</a
+      >
+      <a
+        class="valid"
+        href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fxhtmlboi.github.io%2Fcss%2Fstyle.css&profile=css3svg&usermedium=all&warning=1&vextwarning=&lang=en"
+        >CSS3</a
+      >
     </footer>
-    <script>hljs.highlightAll();</script>
+    <script>
+      hljs.highlightAll();
+    </script>
   </body>
 </html>

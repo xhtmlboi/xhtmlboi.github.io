@@ -1,27 +1,28 @@
-
-<!doctype html>
+ <!DOCTYPE html>
 <html lang="en">
   <head>
-    <meta charset="utf-8">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>
-        XHTMLBoy's website - Some highlights of how this blog is generated
-    </title>
-    <meta name="description" content="Being a Java Champion means communicating. To communicate, you need communication channels. What better way to talk about silly things than with a stark blog? In this article, we&apos;ll show you how this blog works.">
-    <link href="/css/fonts.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/hl.css">
-    <link href="/css/style.css" rel="stylesheet">
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>XHTMLBoy's website - Some highlights of how this blog is generated</title>
+    <meta name="description" content="Being a Java Champion means communicating. To communicate, you need communication channels. What better way to talk about silly things than with a stark blog? In this article, we&apos;ll show you how this blog works." />
+    <link href="/css/fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="/css/hl.css" />
+    <link href="/css/style.css" rel="stylesheet" />
     <script src="/js/hl.js"></script>
-    <link rel="alternate" type="application/rss+xml" href="/feed.xml" title="RSSBoy">
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      href="/feed.xml"
+      title="RSSBoy"
+    />
   </head>
   <body>
     <header>
       <h1>XHTMLBoy's Website</h1>
       <blockquote>
-        You are on a website dedicated to the enthusiasts of
-        (valid) <strong>XHTML</strong>, and of <strong>beautiful
-        mechanics</strong>.
+        You are on a website dedicated to the enthusiasts of (valid)
+        <strong>XHTML</strong>, and of <strong>beautiful mechanics</strong>.
       </blockquote>
     </header>
     <main><a href="/index.html">Back to index</a>
@@ -119,7 +120,7 @@ generator with flexibility and not be locked into the rigid shackles of
 <em>convention over configuration</em>.</p>
 <p>The second point is that we need to look a little more closely at the definition
 of minimality.</p>
-<h3>Minimality</h3>
+<h3 id="minimality">Minimality</h3>
 <p>Before diving into the code, it is important that we agree on the terms we will
 use. As mentioned earlier, by &quot;minimality&quot; I mean &quot;<em>the pressimistic reduction
 of the operations to be performed in order to construct an artifact</em>&quot;. For
@@ -137,7 +138,7 @@ reduce the calculation graph as much as possible <strong>when the dependencies a
 known statically</strong>.</p>
 <p>Now that we agree on the terminology, we can go over some of the techniques used
 in the development of the blog generator!</p>
-<h2>About effect handling</h2>
+<h2 id="about-effect-handling">About effect handling</h2>
 <p>When following the hype of the new generation of functional programming
 languages, one is often confronted with the problem of <strong>effects management</strong>.
 Yeah, effects are annoying because they often force the execution platform
@@ -155,7 +156,7 @@ Well, since OCaml handles effects on its own, why bother trying to process them
 &quot;properly&quot;? There are several ideological reasons which I will not detail, but
 essentially &quot;<em>to test the effects manager proposed by Preface</em>&quot;. Let me
 introduce you to the <strong>Freer Monad</strong>!</p>
-<h3>Describing and interpreting with Freer monad</h3>
+<h3 id="describing-and-interpreting-with-freer-monad">Describing and interpreting with Freer monad</h3>
 <blockquote>
 <p>The difference between Free and Freer monad is quite subtle (and mainly based
 on differences in encodings and prerequisites), in use they offer similar
@@ -258,7 +259,7 @@ you to read and if you are really interested in the subject and you, unlike me,
 are able to read complicated papers, I invite you to read <a href="https://okmij.org/ftp/Computation/free-monad.html"><em>Free and Freer
 Monads: Putting Monads Back into
 Closet</em></a></p>
-<h3>Handler's composition</h3>
+<h3 id="handlers-composition">Handler's composition</h3>
 <p>In the paper &quot;<a href="http://www.cs.ru.nl/~W.Swierstra/Publications/DataTypesALaCarte.pdf"><em>Data Type à la
 Carte</em></a>&quot;, a
 proposal of composition is given. Indeed, as in a Free monad, one builds a monad
@@ -342,7 +343,7 @@ expression of rows simpler (<em>from my point of view</em>) than Haskell.</p>
 <p>Now that we have described all the stuff needed to manage effects (and that
 Preface offers, globally, sufficient tools), we will be able to look at the
 effects described in YOCaml to provide the tools needed to build static pages.</p>
-<h3>YOCaml effects</h3>
+<h3 id="yocaml-effects">YOCaml effects</h3>
 <p>We've seen how to explicitly handle effects with Preface, and how,
 unnecessarily, to be able to compose different handlers, now let's see what
 effects we would want to propagate in a static blog generator. This is, in fact,
@@ -430,7 +431,7 @@ flexible library in earnest. The goal was to show that <strong>a <code>Freer mon
 enough to use</strong> and to lay the groundwork for building a true DSL for static page
 generation. Now we can look at the generation of pages while trying to ensure
 minimality.</p>
-<h2>Characterisation of a set of dependencies</h2>
+<h2 id="characterisation-of-a-set-of-dependencies">Characterisation of a set of dependencies</h2>
 <p>Now that we have proudly described our primary operations... our effects, we can
 start looking at real problems! As mentioned in my expectations of a static blog
 generator, I want <strong>minimality</strong>! For example, let's say I want to build an
@@ -499,7 +500,7 @@ end
 future, to change the representation (if, by chance, I find a better
 representation one day). Now that we have a fairly naive definition of a set of
 dependencies, we can implement <strong>useful</strong> combinators!</p>
-<h3>Interweaving of dependencies and effects</h3>
+<h3 id="interweaving-of-dependencies-and-effects">Interweaving of dependencies and effects</h3>
 <p>Now that we have a robust representation of a set of dependencies (or, at best,
 an abstract, hence substitutable, representation), we can tackle the
 exploitation of our effects to answer a fundamental question in the generation
@@ -553,7 +554,7 @@ trivial.</p>
 by means of the <code>Effect</code> module and now we can describe sets of dependencies and
 check that an artifact is to be built (and ensure minimality). Now we need to
 build an API (or DSL) to provide the opportunity to build artifacts.</p>
-<h2>Definition of building rules</h2>
+<h2 id="definition-of-building-rules">Definition of building rules</h2>
 <blockquote>
 <p>This part is strongly inspired, with the author's consent, by the presentation
 &quot;<a href="http://xvw.github.io/talks/lambdalille-kotlin-arrow/support.pdf">Kotlin for functional programming? A brief introduction of
@@ -651,7 +652,7 @@ let roaring = lift String.uppercase_ascii
 (transform its content into uppercase). But hey, okay, we can create actions,
 but don't you notice a little problem? How to connect <code>read_file</code> with<code> process_markdown</code>?
 Right now ... we can't really ... AHAHA.</p>
-<h3>Compose our actions together</h3>
+<h3 id="compose-our-actions-together">Compose our actions together</h3>
 <p>You can proudly create actions but you can't connect them... that's sad! Let's
 see how to solve this very difficult problem. Let's proceed step by step!
 Composing the dependencies is pretty straightforward... and yes, <strong>I insisted
@@ -732,7 +733,7 @@ it is complicated. And so how to facilitate interactions between actions?
 <em>Muehehe</em> nothing easier, <strong>just add combinators and operators</strong>! Fortunately,
 there is an abstraction that captures the derivation of these combinators and
 operators!</p>
-<h3>Enter the Arrow</h3>
+<h3 id="enter-the-arrow">Enter the Arrow</h3>
 <p>To simplify interactions with actions (our famous <code>('a, 'b) t</code> type), it is
 necessary to construct complementary operators and combinators. Fortunately,
 much of the work has already been done in the previous section! As for monads
@@ -858,7 +859,7 @@ generating static files.</p>
 <p>After this little digression, let's have a look at some combinators to
 understand how to use them.</p>
 </blockquote>
-<h3>Arrow (and Category) functions</h3>
+<h3 id="arrow-and-category-functions">Arrow (and Category) functions</h3>
 <p>As mentioned earlier, our <code>('a, 'b) t</code> type is a kind of function. However,
 since the function that corresponds to the action that needs to be performed is
 buried in a record, composing it and interacting with it is a bit complicated,
@@ -869,7 +870,7 @@ have to worry about these details, but since in the type <code>('a, 'b) t</code>
 the type signatures of the combinators derived by Arrow's generation can be
 tricky. So I propose to go through them one by one and understand their
 respective usefulness.</p>
-<h4><code>&gt;&gt;&gt;</code> (a.k.a compose)</h4>
+<h4 id="a.k.a-compose"><code>&gt;&gt;&gt;</code> (a.k.a compose)</h4>
 <p>We have already observed that <code>&gt;&gt;&gt;</code> corresponds to the composition of Arrows.
 Suppose I have two arrows: <code>f</code> and <code>g</code>, of type <code>('a, 'b) t</code> and <code>('b, 'c) t</code>
 respectively, then <code>f &gt;&gt;&gt; g</code> produces a new arrow of type <code>('a, 'c) t</code>. <strong>This
@@ -938,7 +939,7 @@ function, we could rewrite our previous example like this:</p>
 won't go into because I guess you get the idea. Keep in mind <strong>that the hardest
 part of this part has been done</strong>, <code>&gt;&gt;&gt;</code> is really the core of the pipeline
 definition and the rest is just a bonus! Youhou.</p>
-<h4><code>fst</code>, producing arrows with more than one parameter</h4>
+<h4 id="fst-producing-arrows-with-more-than-one-parameter"><code>fst</code>, producing arrows with more than one parameter</h4>
 <p>Having seen how to sequence arrows, let's now look at the second of Arrow's
 prerequisites, <code>fst</code>. In the context of <code>compose</code>, we were constructing new
 arrows by sequencing. <code>fst</code> allows us to <strong>construct a new arrow that will wait
@@ -978,7 +979,7 @@ metadata.)</p>
 <code>create_file</code> function takes a target and an arrow of type <code>(unit, string) t</code>.
 So once we have processed our file, we can discard its metadata. Now that we
 have seen <code>fst</code>, it is very easy to guess what the next one will be... <code>snd</code>!</p>
-<h4><code>snd</code>, producing arrows with more than one parameter (<em>bis repetita</em>)</h4>
+<h4 id="snd-producing-arrows-with-more-than-one-parameter-bis-repetita"><code>snd</code>, producing arrows with more than one parameter (<em>bis repetita</em>)</h4>
 <p>No need to elaborate, <code>snd</code> is strictly analogous to <code>fst</code>, <strong>it just leaves the
 first parameter of the pair unchanged and applies the function to the second</strong>. In
 the same way as <code>fst</code> we go from an arrow waiting for an input to an arrow
@@ -1008,7 +1009,7 @@ that is not sequentially describable</strong>, which generally does not involve 
 much functional witchcraft.</p>
 <p>But enough of this, let's take a quick look at two last operators, which can
 sometimes be useful.</p>
-<h4><code>***</code> (a.k.a split)</h4>
+<h4 id="a.k.a-split"><code>***</code> (a.k.a split)</h4>
 <p>Thanks to <code>fst</code> we can produce, from an arrow that goes from <code>a</code> to <code>b</code>, a new
 arrow that goes from a pair of <code>a</code> and <code>c</code> and produces a pair of <code>b</code> and <code>c</code>,
 and thanks to <code>snd</code> we can produce, from an arrow that goes from <code>a</code> to <code>b</code>, a
@@ -1037,7 +1038,7 @@ function) is the implementation of <code>id</code> (as <code>Category</code>).</
 mergeable operations, thus avoiding the need to sequence successions of <code>fst</code>,
 <code>compose</code> and <code>snd</code>, we can turn our attention to the final combinator that I
 will introduce in this article!</p>
-<h4><code>&amp;&amp;&amp;</code> (a.k.a fan-out)</h4>
+<h4 id="a.k.a-fan-out"><code>&amp;&amp;&amp;</code> (a.k.a fan-out)</h4>
 <p>Our last operator allows us to apply two arrows to two elements. Another common
 operation that could be considered would be to apply two arrows to a single
 value. <strong>So for two arrows from <code>a</code> to <code>b</code> and from <code>a</code> to <code>c</code>, produce a new
@@ -1056,7 +1057,7 @@ reason about:</p>
 <p>Here are the operators and functions that can be used in regular arrows to build
 more complex arrows by assembly. Before drawing a conclusion of the exploitation
 of arrows, I would like to present you a small example of use.</p>
-<h3>Piping files using arrows</h3>
+<h3 id="piping-files-using-arrows">Piping files using arrows</h3>
 <blockquote>
 <p>As I'm already up to my neck in shame, I'm stealing another example from
 <a href="http://xvw.github.io/talks/lambdalille-kotlin-arrow/support.pdf">Xavier</a> (but
@@ -1119,7 +1120,7 @@ possible solution is:</p>
 <p>Unlike our first implementation, <code>pipe_content</code> is no longer restricted because
 its type is <code>filename -&gt; (filecontent, filecontent) t</code>.
 The use of <code>snd</code> reinforces the idea that new arrows are being built.</p>
-<h3>Some closing words on our Arrow</h3>
+<h3 id="some-closing-words-on-our-arrow">Some closing words on our Arrow</h3>
 <p>After a first glance, one could quickly say <strong>that one of the most atrocious
 ways of programming has been highlighted</strong>! Replacing all function calls with
 Arrow pipelines is a very bad idea that forces <em>tacit</em> programming. How
@@ -1151,7 +1152,7 @@ But it was all I want say about designing a DSL for creating generators. Joint w
 a good API, difficulties behind Arrows can be hidden. But it can be cool to
 understand what is under the hood. Let's move on the last <em>big part</em> of this too long
 article.</p>
-<h2>It is all about diversity</h2>
+<h2 id="it-is-all-about-diversity">It is all about diversity</h2>
 <p>We have <em>proudly</em> designing, using Arrows, an almost-generic way to build generics
 (<em>modulo the expressivity of our standard library</em>) pipelines. We <strong>provide a kind
 of abstraction over effect handling (so also over the excution platform) and a kind
@@ -1219,7 +1220,7 @@ Yaml). Ie: a module of this type:</p>
 end
 </code></pre>
 <p>Now we need to describe <strong>format-agnostic</strong> validators.</p>
-<h3>Metadata Validation à La Carte using Applicative functors and Visitor Pattern</h3>
+<h3 id="metadata-validation-à-la-carte-using-applicative-functors-and-visitor-pattern">Metadata Validation à La Carte using Applicative functors and Visitor Pattern</h3>
 <p>The fact that we would like to use the <code>Validation</code> applicative is quite
 obvious, we want <strong>to collect all the errors in the metadata and not have to run
 the generator X times to catch X errors</strong>. So we know we'll be using
@@ -1481,7 +1482,7 @@ and the function <code>from_string</code>, <em>of course</em>):</p>
 validating it) defined. Now to deal with the various template engines, we would
 need the <strong>generic injection</strong>, which is the transformation into a format
 interpretable by a template engine.</p>
-<h3>Metadata injection à La Carte, without any fancy trick</h3>
+<h3 id="metadata-injection-à-la-carte-without-any-fancy-trick">Metadata injection à La Carte, without any fancy trick</h3>
 <p>As most of the work has been done before, one must sadly note that the injection
 is super easy and <strong>does not rely on any complicated Java Champion
 techniques</strong>... We only have to provide the opposite of our visitors. Instead of
@@ -1610,7 +1611,7 @@ let create_article file =
 <p>The symmetry between reading data and injecting it into a template is fun, and
 now we have a generic approach to building static, relatively configurable page
 generators. <strong>We can finally conclude</strong>!</p>
-<h2>The belated conclusion</h2>
+<h2 id="the-belated-conclusion">The belated conclusion</h2>
 <p>In this article, we have briefly seen some of the details of how <strong>an aspiring
 Java Champion</strong> uses a library to generate, <em>unproductively</em>, his blog, through
 three axes:</p>
@@ -1663,15 +1664,26 @@ unikernel</a>.</p>
 <p>I hope you found it interesting to read and I'll see you soon for new articles!</p>
 
     </article>
-
-        </main>
+ </main>
     <footer>
-        <a href="https://github.com/xhtmlboi/yocaml">Powered by <strong>YOCaml</strong></a>
-        (snif, WordPress was definitively a better name)
-        <br />
-        <a class="valid" href="https://validator.w3.org/check?uri=https%3A%2F%2Fxhtmlboi.github.io&charset=%28detect+automatically%29&doctype=Inline&group=0">HTML5</a>
-        <a class="valid" href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fxhtmlboi.github.io%2Fcss%2Fstyle.css&profile=css3svg&usermedium=all&warning=1&vextwarning=&lang=en">CSS3</a>
+      <a href="https://github.com/xhtmlboi/yocaml"
+        >Powered by <strong>YOCaml</strong></a
+      >
+      (snif, WordPress was definitively a better name)
+      <br>
+      <a
+        class="valid"
+        href="https://validator.w3.org/check?uri=https%3A%2F%2Fxhtmlboi.github.io&charset=%28detect+automatically%29&doctype=Inline&group=0"
+        >HTML5</a
+      >
+      <a
+        class="valid"
+        href="https://jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fxhtmlboi.github.io%2Fcss%2Fstyle.css&profile=css3svg&usermedium=all&warning=1&vextwarning=&lang=en"
+        >CSS3</a
+      >
     </footer>
-    <script>hljs.highlightAll();</script>
+    <script>
+      hljs.highlightAll();
+    </script>
   </body>
 </html>
